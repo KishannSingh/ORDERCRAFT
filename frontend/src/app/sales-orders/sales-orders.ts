@@ -387,6 +387,14 @@ export class SalesOrders implements OnInit {
     this.showItemForm = true;
   }
 
+  closeItemForm(): void {
+    if (this.itemSaving) return;
+    this.showItemForm = false;
+    this.editingItemId = null;
+    this.itemErrorMessage = '';
+    this.resetItemForm();
+  }
+
   loadOrderItems(orderId: number): void {
     if (!Number.isSafeInteger(orderId) || orderId <= 0) {
       this.itemErrorMessage = 'Select a valid sales order.';

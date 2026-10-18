@@ -1040,34 +1040,50 @@ tbody tr:last-child td {
    ACTION BUTTONS
    ========================================================= */
 
-.action-buttons {
+.action-buttons,
+.item-action-buttons {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
 
+.action-buttons button,
+.item-action-buttons button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.items-btn {
+  color: #35628f;
+  background: #f1f7ff;
+  border-color: #dce8f6 !important;
+}
+
+.items-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #e8f2ff;
+  border-color: #c7dbf2 !important;
 }
 
 .edit-btn,
 .delete-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 5px;
-
-  min-height: 31px;
-
-  padding: 0 9px;
-
-  border-radius: 8px;
-
-  font-size: 9px;
-  font-weight: 800;
-
-  transition:
-    transform 0.16s ease,
-    background 0.16s ease,
-    border-color 0.16s ease;
+  border: 1px solid;
 }
 
 .edit-btn svg,
@@ -1083,7 +1099,7 @@ tbody tr:last-child td {
   background: #f7f7ff;
 }
 
-.edit-btn:hover {
+.edit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 
   border-color: #d9daf1;
@@ -1097,11 +1113,29 @@ tbody tr:last-child td {
   background: #fff7f7;
 }
 
-.delete-btn:hover {
+.delete-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 
   border-color: #eccaca;
   background: #fff0f0;
+}
+
+.action-buttons button:focus-visible,
+.item-action-buttons button:focus-visible {
+  outline: 2px solid #5b5ce2;
+  outline-offset: 2px;
+}
+
+.action-buttons button:active:not(:disabled),
+.item-action-buttons button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.action-buttons button:disabled,
+.item-action-buttons button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* =========================================================
@@ -1502,163 +1536,6 @@ tbody tr:last-child td {
     min-width: 880px;
   }
 
-  /* =========================================
-     SALES ORDERS — PRODUCT STYLE ACTION BUTTONS
-     ========================================= */
-
-  .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: nowrap;
-  }
-
-  .edit-btn,
-  .delete-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    min-height: 29px;
-    padding: 0 8px;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 8px;
-    font-weight: 800;
-    white-space: nowrap;
-    cursor: pointer;
-    transition:
-      transform 0.16s ease,
-      background 0.16s ease,
-      border-color 0.16s ease;
-  }
-
-  .edit-btn svg,
-  .delete-btn svg {
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-  }
-
-  /* Edit — Purple */
-  .edit-btn {
-    border: 1px solid #e5e7f6;
-    color: #5c5ed3;
-    background: #f7f7ff;
-  }
-
-  .edit-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    border-color: #d9daf1;
-    background: #efefff;
-  }
-
-  /* Delete — Red */
-  .delete-btn {
-    border: 1px solid #f1dddd;
-    color: #d25050;
-    background: #fff7f7;
-  }
-
-  .delete-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    border-color: #eccaca;
-    background: #fff0f0;
-  }
-
-  /* Disabled state */
-  .edit-btn:disabled,
-  .delete-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-    transform: none;
-  }
-  /* ACTION BUTTONS */
-  .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-
-  .action-buttons .edit-btn,
-  .action-buttons .delete-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    min-height: 29px;
-    padding: 0 8px;
-    border: 1px solid;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease,
-    transform 0.2s ease;
-  }
-
-  .action-buttons .edit-btn svg,
-  .action-buttons .delete-btn svg {
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-  }
-
-  .action-buttons .edit-btn {
-    color: #5c5ed3;
-    background: #f7f7ff;
-    border-color: #e5e7f6;
-  }
-
-  .action-buttons .edit-btn:hover {
-    background: #ededff;
-    border-color: #c9caf7;
-  }
-
-  .action-buttons .delete-btn {
-    color: #d25050;
-    background: #fff7f7;
-    border-color: #f1dddd;
-  }
-
-  .action-buttons .delete-btn:hover {
-    background: #ffeded;
-    border-color: #edc3c3;
-  }
-
-  .action-buttons .edit-btn:focus-visible,
-  .action-buttons .delete-btn:focus-visible {
-    outline: 2px solid #5b5ce2;
-    outline-offset: 2px;
-  }
-
-  .action-buttons .edit-btn:active,
-  .action-buttons .delete-btn:active {
-    transform: scale(0.97);
-  }/* Remove unwanted dash after Edit button */
-  .action-buttons .edit-btn::after,
-  .action-buttons .edit-btn::before,
-  .action-buttons .delete-btn::before,
-  .action-buttons .delete-btn::after {
-    content: none !important;
-    display: none !important;
-  }
-
-  /* Keep Edit and Delete buttons clean */
-  .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .action-buttons .edit-btn,
-  .action-buttons .delete-btn {
-    text-decoration: none !important;
-    border-right: 1px solid;
-  }
-
 }
 .api-message {
   margin: 0 0 16px;
@@ -1689,8 +1566,7 @@ tbody tr:last-child td {
 
 .items-heading,
 .items-heading-actions,
-.item-form-actions,
-.item-actions {
+.item-form-actions {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1712,14 +1588,95 @@ tbody tr:last-child td {
 
 .item-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  grid-template-columns: minmax(190px, 1.45fr) minmax(125px, 0.75fr) minmax(150px, 0.9fr) auto;
   gap: 16px;
   align-items: end;
   margin: 0 0 20px;
-  padding: 16px;
-  border: 1px solid #e7e9f1;
-  border-radius: 14px;
-  background: #f8f9fc;
+  padding: 20px;
+  border: 1px solid #e4e7f0;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #fafbff 100%);
+  box-shadow: 0 8px 22px rgba(32, 42, 75, 0.045);
+}
+
+.item-form-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+
+.item-form-heading h3 {
+  margin: 5px 0 3px;
+  color: #202938;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.item-form-heading p {
+  margin: 0;
+  color: #74798a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.item-form-close,
+.items-heading-actions .items-panel-close {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid #e5e7f2;
+  border-radius: 50%;
+  color: #5c5ed3;
+  background: #f5f5ff;
+  box-shadow: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.item-form-close span,
+.items-heading-actions .items-panel-close span {
+  transform: translateY(-1px);
+}
+
+.item-form-close:hover:not(:disabled),
+.items-heading-actions .items-panel-close:hover:not(:disabled) {
+  transform: rotate(4deg);
+  color: #4648b9;
+  background: #ececff;
+  border-color: #d5d6f3;
+}
+
+.item-form-close:focus-visible,
+.items-heading-actions .items-panel-close:focus-visible {
+  outline: 2px solid #5b5ce2;
+  outline-offset: 3px;
+}
+
+.item-form-close:active:not(:disabled),
+.items-heading-actions .items-panel-close:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.item-form-close:disabled,
+.items-heading-actions .items-panel-close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .item-form .input-group {
@@ -1729,11 +1686,99 @@ tbody tr:last-child td {
 .item-form input,
 .item-form select {
   width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #dfe4ed;
+  border-radius: 10px;
+  color: #202938;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.item-form select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.item-form select option {
+  color: #202938;
+  background: #ffffff;
+}
+
+.item-form input:focus,
+.item-form select:focus {
+  outline: none;
+  border-color: #9294e8;
+  box-shadow: 0 0 0 3px rgba(91, 92, 226, 0.13);
+}
+
+.item-form input:disabled,
+.item-form select:disabled {
+  color: #667085;
+  background: #f3f4f7;
+  cursor: not-allowed;
 }
 
 .item-form-actions {
   align-self: end;
+  justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.item-form .save-btn,
+.item-form .cancel-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.item-form .save-btn {
+  border: 1px solid #5b5ce2;
+  background: linear-gradient(135deg, #6967ea, #5658d9);
+}
+
+.item-form .save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 18px rgba(85, 87, 216, 0.22);
+}
+
+.item-form .cancel-btn {
+  border: 1px solid #dfe4ed;
+  color: #475467;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.item-form .cancel-btn:hover:not(:disabled) {
+  border-color: #cfd5de;
+  background: #eef1f5;
+}
+
+.item-form .save-btn:focus-visible,
+.item-form .cancel-btn:focus-visible {
+  outline: 2px solid #5b5ce2;
+  outline-offset: 3px;
+}
+
+.item-form .save-btn:active:not(:disabled),
+.item-form .cancel-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.item-form .save-btn:disabled,
+.item-form .cancel-btn:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .items-empty {
@@ -1742,13 +1787,21 @@ tbody tr:last-child td {
   text-align: center;
 }
 
-.item-actions {
-  flex-wrap: wrap;
-}
-
 .items-card button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.action-buttons {
+  gap: 9px;
+}
+
+.action-buttons .edit-btn {
+  border: 1px solid #e5e7f6;
+}
+
+.action-buttons .delete-btn {
+  border: 1px solid #f1dddd;
 }
 
 @media (max-width: 700px) {
@@ -1759,5 +1812,43 @@ tbody tr:last-child td {
   .items-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .item-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .item-form-header {
+    grid-column: 1;
+  }
+
+  .item-form-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 940px) {
+  .item-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .item-form-header,
+  .item-form-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 450px) {
+  .item-form .save-btn,
+  .item-form .cancel-btn {
+    width: auto;
+    flex: 1 1 0;
+  }
+
+  .action-buttons,
+  .item-action-buttons {
+    gap: 7px;
   }
 }

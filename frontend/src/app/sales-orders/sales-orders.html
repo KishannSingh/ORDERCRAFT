@@ -249,7 +249,15 @@
         <button type="button" class="primary-btn" (click)="openNewItemForm()" [disabled]="itemSaving || orderItemsLoading || products.length === 0">
           Add Item
         </button>
-        <button type="button" class="secondary-btn" (click)="closeOrderItems()" [disabled]="itemSaving">Close</button>
+        <button
+          type="button"
+          class="items-panel-close"
+          aria-label="Close sales order items panel"
+          title="Close sales order items panel"
+          (click)="closeOrderItems()"
+          [disabled]="itemSaving">
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
     </header>
 
@@ -259,6 +267,22 @@
 
     @if (showItemForm) {
     <form class="item-form" #lineForm="ngForm" (ngSubmit)="saveOrderItem()">
+      <header class="item-form-header">
+        <div class="item-form-heading">
+          <span class="table-kicker">{{ editingItemId !== null ? 'EDIT ORDER LINE' : 'NEW ORDER LINE' }}</span>
+          <h3>{{ editingItemId !== null ? 'Edit Sales Order Item' : 'Add Sales Order Item' }}</h3>
+          <p>Select a product and set the quantity and unit price for this order.</p>
+        </div>
+        <button
+          type="button"
+          class="item-form-close"
+          aria-label="Close Add Item form"
+          title="Close Add Item form"
+          (click)="closeItemForm()"
+          [disabled]="itemSaving">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
       <div class="input-group">
         <label for="lineProduct">Product *</label>
         <select id="lineProduct" name="productId" [(ngModel)]="itemForm.productId" (ngModelChange)="onProductSelected($event)" required [disabled]="itemSaving">
@@ -280,7 +304,7 @@
         <button type="submit" class="save-btn" [disabled]="itemSaving || lineForm.invalid || itemForm.productId <= 0">
           {{ itemSaving ? 'Saving...' : (editingItemId !== null ? 'Update Item' : 'Save Item') }}
         </button>
-        <button type="button" class="secondary-btn" (click)="showItemForm = false; editingItemId = null; resetItemForm()" [disabled]="itemSaving">Cancel</button>
+        <button type="button" class="cancel-btn" (click)="closeItemForm()" [disabled]="itemSaving">Cancel</button>
       </div>
     </form>
     }
@@ -299,19 +323,21 @@
             <td>{{ item.quantity }}</td>
             <td>₹{{ item.unitPrice | number:'1.2-2' }}</td>
             <td>₹{{ item.quantity * item.unitPrice | number:'1.2-2' }}</td>
-            <td class="item-actions">
-              <button type="button" class="edit-btn" title="Edit order item" aria-label="Edit order item #{{ item.itemId }}" (click)="editOrderItem(item)" [disabled]="itemSaving || itemDeletingId !== null">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Edit</span>
-              </button>
-              <button type="button" class="delete-btn" title="Delete order item" aria-label="Delete order item #{{ item.itemId }}" (click)="deleteOrderItem(item.itemId)" [disabled]="itemSaving || itemDeletingId !== null">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>{{ itemDeletingId === item.itemId ? 'Deleting...' : 'Delete' }}</span>
-              </button>
+            <td>
+              <div class="item-action-buttons">
+                <button type="button" class="edit-btn" title="Edit order item" aria-label="Edit order item #{{ item.itemId }}" (click)="editOrderItem(item)" [disabled]="itemSaving || itemDeletingId !== null">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span>Edit</span>
+                </button>
+                <button type="button" class="delete-btn" title="Delete order item" aria-label="Delete order item #{{ item.itemId }}" (click)="deleteOrderItem(item.itemId)" [disabled]="itemSaving || itemDeletingId !== null">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span>{{ itemDeletingId === item.itemId ? 'Deleting...' : 'Delete' }}</span>
+                </button>
+              </div>
             </td>
           </tr>
           }
@@ -520,7 +546,7 @@
               <!-- EDIT BUTTON -->
               <button
                 type="button"
-                class="edit-btn"
+                class="items-btn"
                 (click)="manageOrderItems(order)"
                 [disabled]="itemSaving"
                 aria-label="Manage sales order items">
