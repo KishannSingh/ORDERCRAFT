@@ -1,0 +1,316 @@
+
+<div class="invoices-page">
+
+  <section class="page-heading">
+    <div class="heading-copy">
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        BILLING &amp; INVOICING
+      </div>
+      <h1>Invoices</h1>
+      <p>Create, manage and track customer invoices and payment status.</p>
+    </div>
+
+    <button type="button" class="primary-btn" (click)="openForm()">
+      <span class="btn-icon" aria-hidden="true">+</span> Create Invoice
+    </button>
+  </section>
+
+  @if (errorMessage) {
+  <div class="alert error-alert">{{ errorMessage }}</div>
+  }
+
+  @if (successMessage) {
+  <div class="alert success-alert">{{ successMessage }}</div>
+  }
+  @if (paymentsError) {
+  <div class="alert error-alert" role="alert">
+    {{ paymentsError }} Payment totals are unavailable until payments reload. The status badge shows the last stored invoice status and may be out of date.
+  </div>
+  }
+  @if (ordersError || customersError) {
+  <div class="alert error-alert" role="alert">
+    {{ ordersError || customersError }}
+    <button type="button" class="secondary-btn" (click)="refreshData(true)" [disabled]="isRefreshing">Retry related records</button>
+  </div>
+  }
+
+  <section class="invoice-stats">
+    <article class="invoice-stat-card">
+      <div class="stat-icon purple">▤</div>
+      <div>
+        <span>Total Invoices</span>
+        <strong>{{ loading ? '…' : (invoicesError ? '—' : invoices.length) }}</strong>
+      </div>
+    </article>
+
+    <article class="invoice-stat-card">
+      <div class="stat-icon green">₹</div>
+      <div>
+        <span>Amount Received</span>
+        <strong>{{ loading || paymentsLoading ? '…' : (invoicesError || paymentsError ? '—' : formatCurrency(totalAmountReceived)) }}</strong>
+      </div>
+    </article>
+
+    <article class="invoice-stat-card">
+      <div class="stat-icon orange">◷</div>
+      <div>
+        <span>Outstanding Balance</span>
+        <strong>{{ loading || paymentsLoading ? '…' : (invoicesError || paymentsError ? '—' : formatCurrency(totalBalanceOutstanding)) }}</strong>
+      </div>
+    </article>
+  </section>
+
+  @if (showForm) {
+  <section class="form-card">
+    <div class="form-heading">
+      <div>
+          <span class="section-kicker">
+            {{ editingId !== null ? 'UPDATE RECORD' : 'NEW BILLING RECORD' }}
+          </span>
+        <h2>{{ editingId !== null ? 'Edit Invoice' : 'Create New Invoice' }}</h2>
+        <p>Choose a sales order and date. The invoice amount follows its calculated order total.</p>
+      </div>
+
+      <button type="button" class="close-btn" (click)="closeForm()" [disabled]="saving" aria-label="Close invoice form">×</button>
+    </div>
+
+    <form (ngSubmit)="saveInvoice()" #invoiceForm="ngForm">
+      <div class="form-grid">
+
+        <div class="input-group">
+          <label for="orderId">Sales Order</label>
+          <select
+            id="orderId"
+            name="orderId"
+            [(ngModel)]="form.orderId"
+            (ngModelChange)="onOrderChanged($event)"
+            [disabled]="saving || ordersLoading"
+            required>
+            <option [ngValue]="0" disabled>Select an order</option>
+
+            @for (order of orders; track order.orderId) {
+            <option [ngValue]="order.orderId" [disabled]="hasInvoiceForOrder(order.orderId)">
+              {{ getOrderLabel(order.orderId) }} · {{ getOrderCustomerName(order.orderId) }}
+            </option>
+            }
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="invoiceDate">Invoice Date</label>
+          <input
+            id="invoiceDate"
+            name="invoiceDate"
+            type="date"
+            [disabled]="saving"
+            [(ngModel)]="form.invoiceDate"
+            required />
+        </div>
+
+        <div class="input-group">
+          <label for="invoiceAmount">Sales Order Total (₹)</label>
+          <input
+            id="invoiceAmount"
+            name="amount"
+            type="number"
+            readonly
+            min="0"
+            [(ngModel)]="form.amount"
+            required />
+        </div>
+
+      </div>
+
+      <p class="form-note">
+        The invoice amount follows the selected sales order. Payment totals and balance use recorded payments.
+      </p>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="primary-btn"
+          [disabled]="saving || invoiceForm.invalid">
+          {{ saving ? 'Saving...' : (editingId !== null ? 'Update Invoice' : 'Save Invoice') }}
+        </button>
+
+        <button type="button" class="secondary-btn" (click)="closeForm()" [disabled]="saving">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </section>
+  }
+
+  <section class="table-card">
+
+    <div class="table-header">
+      <div>
+        <span class="section-kicker">BILLING DIRECTORY</span>
+        <h2>Invoice List</h2>
+        <p>
+          {{ loading ? 'Loading' : (invoicesError ? 'Unavailable' : invoices.length) }}
+          @if (!loading && !invoicesError) { invoice{{ invoices.length === 1 ? '' : 's' }} available in the system }
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="refresh-btn"
+        (click)="refreshData()"
+        [disabled]="isRefreshing"
+        [attr.aria-busy]="isRefreshing">
+        {{ isRefreshing ? 'Refreshing…' : '↻ Refresh' }}
+      </button>
+    </div>
+
+    <div class="table-toolbar">
+      <span>Showing <strong>{{ loading || invoicesError ? '—' : invoices.length }}</strong> invoice records</span>
+      <span class="live-indicator"><i></i> Billing overview</span>
+    </div>
+
+    @if (loading) {
+    <div class="state-message" role="status">Loading invoices...</div>
+    } @else if (invoicesError) {
+    <div class="state-message" role="alert">
+      <h3>Unable to load invoices</h3>
+      <p>{{ invoicesError }}</p>
+      <button type="button" class="primary-btn" (click)="refreshData(true)" [disabled]="isRefreshing">Retry</button>
+    </div>
+    } @else if (invoices.length === 0) {
+    <div class="state-message">
+      <div class="empty-icon">▤</div>
+      <h3>No invoices found</h3>
+      <p>Create your first invoice to get started.</p>
+      <button type="button" class="primary-btn" (click)="openForm()">
+        <span class="btn-icon" aria-hidden="true">+</span> Create Invoice
+      </button>
+    </div>
+    } @else {
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+        <tr>
+          <th>Invoice ID</th>
+          <th>Sales Order / Customer</th>
+          <th>Invoice Date</th>
+          <th>Invoice Amount</th>
+          <th>Amount Paid</th>
+          <th>Balance Due</th>
+          <th>Payment Progress</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @for (invoice of invoices; track trackByInvoiceId($index, invoice)) {
+        <tr>
+          <td>
+            <span class="id-badge">#{{ invoice.invoiceId }}</span>
+          </td>
+
+          <td>
+            <div class="order-cell">
+              <span class="order-avatar">O</span>
+              <div>
+                <strong>{{ getOrderLabel(invoice.orderId) }}</strong>
+                <small>{{ getOrderCustomerName(invoice.orderId) }}</small>
+              </div>
+            </div>
+          </td>
+
+          <td>{{ invoice.invoiceDate }}</td>
+
+          <td class="money-cell">
+            <strong>{{ formatCurrency(invoice.amount) }}</strong>
+          </td>
+
+          <td class="money-cell paid-money">
+            {{ paymentsLoading ? '…' : (paymentsError ? '—' : formatCurrency(getPaidAmount(invoice))) }}
+          </td>
+
+          <td
+            class="money-cell"
+            [class.balance-due]="!paymentsLoading && !paymentsError && getBalanceDue(invoice) > 0">
+            <strong>{{ paymentsLoading ? '…' : (paymentsError ? '—' : formatCurrency(getBalanceDue(invoice))) }}</strong>
+          </td>
+
+          <td>
+            <div class="payment-progress">
+              <div class="progress-info">
+                <span>{{ paymentsLoading ? '…' : (paymentsError ? '—' : getPaymentProgress(invoice) + '%') }}</span>
+              </div>
+
+              <div class="progress-track">
+                <div
+                  class="progress-fill"
+                  [style.width.%]="paymentsLoading || paymentsError ? 0 : getPaymentProgress(invoice)">
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <td>
+                  <span
+                    class="status-badge"
+                    [class.paid]="!paymentsLoading && getPaymentStatus(invoice) === 'PAID'"
+                    [class.partial]="!paymentsLoading && getPaymentStatus(invoice) === 'PARTIAL'"
+                    [class.unpaid]="!paymentsLoading && getPaymentStatus(invoice) === 'UNPAID'">
+                    <span class="status-dot"></span>
+                    {{ paymentsLoading ? 'LOADING' : getPaymentStatus(invoice) }}
+                  </span>
+          </td>
+
+          <td>
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="edit-btn"
+                title="Edit invoice"
+                aria-label="Edit invoice"
+                [disabled]="saving || deletingId !== null"
+                (click)="editInvoice(invoice)">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="delete-btn"
+                title="Delete invoice"
+                aria-label="Delete invoice"
+                [disabled]="saving || deletingId !== null"
+                (click)="deleteInvoice(invoice)">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                {{ deletingId === invoice.invoiceId ? 'Deleting...' : 'Delete' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+    }
+
+    <div class="table-footer">
+      <span>{{ invoices.length }} total records</span>
+      <span class="live-indicator"><i></i> Invoice data</span>
+    </div>
+
+  </section>
+
+  <footer class="invoices-footer">
+    <span><i></i> OrderCraft billing module</span>
+    <span>OrderCraft ERP</span>
+  </footer>
+
+</div>

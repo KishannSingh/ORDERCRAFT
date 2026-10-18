@@ -1,0 +1,513 @@
+
+<div class="products-page bom-page">
+
+  <!-- PAGE HEADER -->
+  <section class="page-heading">
+    <div class="heading-copy">
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        MANUFACTURING CONTROL
+      </div>
+
+      <h1>Bill of Materials</h1>
+      <p>Manage product materials, quantities and manufacturing requirements.</p>
+    </div>
+
+    <button type="button" class="primary-btn" (click)="openAddForm()">
+      <span class="btn-icon">+</span>
+      <span>Add BOM</span>
+    </button>
+  </section>
+
+  @if (successMessage) {
+  <div class="success-message" role="status">{{ successMessage }}</div>
+  }
+
+  <!-- SUMMARY CARDS -->
+  <section class="product-stats">
+    <article class="product-stat-card">
+      <div class="product-stat-icon catalog">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="4" y="4" width="16" height="16" rx="3"
+                stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8 9h8M8 13h8M8 17h4"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <span>Total BOM Records</span>
+        <strong>{{ boms.length }}</strong>
+      </div>
+    </article>
+
+    <article class="product-stat-card">
+      <div class="product-stat-icon pricing">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"
+                stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          <path d="m4 12 8 4.5 8-4.5M4 16.5 12 21l8-4.5"
+                stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <span>Material Planning</span>
+        <strong class="status-text">Active</strong>
+      </div>
+    </article>
+
+    <article class="product-stat-card">
+      <div class="product-stat-icon synced">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"
+                  stroke="currentColor" stroke-width="1.7"/>
+          <path d="m7.5 12 3 3 6-6"
+                stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <span>Data Status</span>
+        <strong class="status-text synced-text">
+          {{ isLoading ? 'Syncing' : 'Connected' }}
+        </strong>
+      </div>
+    </article>
+  </section>
+
+  <!-- ADD / EDIT FORM -->
+  @if (showForm) {
+  <section class="form-card" id="bom-form">
+    <div class="form-header">
+      <div class="form-title-area">
+        <div class="form-icon">
+          {{ editingBomId !== null ? '✎' : '+' }}
+        </div>
+        <div>
+          <div class="form-kicker">
+            {{ editingBomId !== null ? 'UPDATE RECORD' : 'NEW RECORD' }}
+          </div>
+          <h2>{{ editingBomId !== null ? 'Edit BOM' : 'Add New BOM' }}</h2>
+          <p>Enter product and material requirements.</p>
+        </div>
+      </div>
+
+      <span class="form-badge">
+          {{ editingBomId !== null ? 'EDIT MODE' : 'NEW BOM' }}
+        </span>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <form #bomForm="ngForm" (ngSubmit)="saveBom()">
+      <div class="form-grid">
+
+        <div class="input-group">
+          <label for="productId">Product <span class="required">*</span></label>
+          <div class="input-shell">
+            <span class="input-icon">#</span>
+            <select
+              id="productId"
+              name="productId"
+              [(ngModel)]="newBom.productId"
+              required
+              [disabled]="isSaving">
+              <option [ngValue]="0" disabled>Select a product</option>
+              @for (product of products; track product.productId) {
+              <option [ngValue]="product.productId">
+                {{ product.productCode }} — {{ product.name }}
+              </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="materialName">Material Name <span class="required">*</span></label>
+          <div class="input-shell">
+            <span class="input-icon">M</span>
+            <input
+              id="materialName"
+              name="materialName"
+              type="text"
+              [(ngModel)]="newBom.materialName"
+              placeholder="e.g. Steel Rod"
+              maxlength="100"
+              required
+              [disabled]="isSaving">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="quantity">Quantity per Product <span class="required">*</span></label>
+          <div class="input-shell">
+            <span class="input-icon">#</span>
+            <input
+              id="quantity"
+              name="quantity"
+              type="number"
+              [(ngModel)]="newBom.quantity"
+              min="0.001"
+              step="any"
+              placeholder="Enter quantity"
+              required
+              [disabled]="isSaving">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="unit">Unit of Measurement <span class="required">*</span></label>
+          <div class="input-shell">
+            <span class="input-icon">U</span>
+            <select
+              id="unit"
+              name="unit"
+              [(ngModel)]="newBom.unit"
+              required
+              [disabled]="isSaving">
+              <option value="" disabled>Select unit</option>
+              <option value="kg">Kilogram (kg)</option>
+              <option value="g">Gram (g)</option>
+              <option value="piece">Piece</option>
+              <option value="pcs">Pieces (pcs)</option>
+              <option value="m">Meter (m)</option>
+              <option value="cm">Centimeter (cm)</option>
+              <option value="L">Liter (L)</option>
+              <option value="ml">Milliliter (ml)</option>
+              <option value="box">Box</option>
+              <option value="set">Set</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-actions form-actions-footer">
+        <span class="required-note">* Required fields</span>
+
+        <div class="form-action-buttons">
+          <button
+            type="button"
+            class="cancel-btn"
+            (click)="cancelForm()"
+            [disabled]="isSaving">
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="save-btn"
+            [disabled]="isSaving || !bomForm.valid || !newBom.productId">
+            @if (isSaving) {
+            <span class="action-icon">...</span>
+            <span>Saving...</span>
+            } @else {
+            <span class="action-icon">✓</span>
+            <span>{{ editingBomId !== null ? 'Update BOM' : 'Save BOM' }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+  }
+
+  <!-- BOM TABLE -->
+  <section class="table-card">
+    <div class="table-header">
+      <div class="table-title-area">
+        <div class="table-heading-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="4" y="4" width="16" height="16" rx="3"
+                  stroke="currentColor" stroke-width="1.7"/>
+            <path d="M8 9h8M8 13h8M8 17h4"
+                  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div>
+          <div class="table-kicker">MATERIAL DEFINITIONS</div>
+          <h2>BOM Records</h2>
+          <p>Product-wise material requirements.</p>
+        </div>
+      </div>
+
+      <div class="record-count-box">
+        <span>Total</span>
+        <strong>{{ boms.length }}</strong>
+      </div>
+    </div>
+
+    @if (errorMessage) {
+    <div class="message-banner error-banner" role="alert">
+      <span>{{ errorMessage }}</span>
+      <button type="button" class="text-button" (click)="loadBoms()">Retry</button>
+    </div>
+    }
+
+    @if (productError) {
+    <div class="message-banner warning-banner" role="status">
+      <span>{{ productError }}</span>
+      <button type="button" class="text-button" (click)="loadProducts()">Retry</button>
+    </div>
+    }
+
+    <div class="table-toolbar">
+      <span>
+        Showing <strong>{{ boms.length }}</strong>
+        {{ boms.length === 1 ? 'BOM record' : 'BOM records' }}
+      </span>
+      <span class="toolbar-status">
+        <span class="toolbar-dot"></span>
+        Live Data
+      </span>
+    </div>
+
+    <div class="table-wrapper">
+      @if (isLoading) {
+      <div class="empty-state">
+        <span class="large-spinner"></span>
+        <div class="empty-copy">
+          <h3>Loading BOM records</h3>
+          <p>Fetching the latest manufacturing data.</p>
+        </div>
+      </div>
+      } @else if (boms.length > 0) {
+      <table class="bom-table">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Product</th>
+          <th>Material</th>
+          <th>Quantity</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @for (bom of boms; track bom.bomId) {
+        <tr>
+          <td>
+            <span class="id-badge">#{{ bom.bomId }}</span>
+          </td>
+
+          <td>
+            <div class="product-profile">
+                    <span class="product-avatar">
+                      {{ (getProductName(bom.productId) || 'P').charAt(0).toUpperCase() }}
+                    </span>
+              <div class="product-profile-copy">
+                <strong>{{ getProductName(bom.productId) }}</strong>
+                <span>{{ getProductCode(bom.productId) }}</span>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <div class="material-profile">
+                    <span class="material-avatar">
+                      {{ bom.materialName?.charAt(0)?.toUpperCase() || 'M' }}
+                    </span>
+              <div class="product-profile-copy">
+                <strong>{{ bom.materialName }}</strong>
+                <span>Material component</span>
+              </div>
+            </div>
+          </td>
+
+          <td>
+            <span class="quantity-value">{{ bom.quantity }}</span>
+          </td>
+
+          <td>
+            <span class="code-badge">{{ bom.unit }}</span>
+          </td>
+
+          <!-- STATUS COLUMN -->
+          <td>
+  <span class="status-badge active-status">
+    <span class="status-dot"></span>
+    Active
+  </span>
+          </td>
+
+          <td>
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="edit-btn"
+                title="Edit BOM"
+                aria-label="Edit BOM"
+                [disabled]="isSaving"
+                (click)="editBom(bom)">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5"
+                        stroke="currentColor" stroke-width="1.7"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Edit</span>
+              </button>
+
+              <button
+                type="button"
+                class="delete-btn"
+                title="Delete BOM"
+                aria-label="Delete BOM"
+                [disabled]="isSaving || deletingId === bom.bomId"
+                (click)="deleteBom(bom.bomId)">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13"
+                        stroke="currentColor" stroke-width="1.7"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ deletingId === bom.bomId ? 'Deleting...' : 'Delete' }}</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+        </tbody>
+      </table>
+      } @else {
+      <div class="empty-state">
+        <div class="empty-illustration">
+          <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <path d="m24 6 15 8.5v19L24 42 9 33.5v-19L24 6Z"
+                  stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M24 6v18m15-9.5L24 24 9 14.5"
+                  stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="empty-copy">
+          <div class="empty-kicker">MATERIAL DEFINITIONS</div>
+          <h3>No BOM Records Yet</h3>
+          <p>Add your first Bill of Materials to define product material requirements.</p>
+        </div>
+        <button type="button" class="empty-btn" (click)="openAddForm()">
+          <span>+</span> Add First BOM
+        </button>
+      </div>
+      }
+    </div>
+
+    @if (!isLoading && boms.length > 0) {
+    <div class="table-footer">
+        <span>
+          {{ boms.length }}
+          {{ boms.length === 1 ? 'total record' : 'total records' }}
+        </span>
+      <span class="footer-sync">
+          <span class="toolbar-dot"></span>
+          Data synced
+        </span>
+    </div>
+    }
+  </section>
+
+  <!-- MATERIAL CALCULATOR -->
+  <section class="table-card calculator-card">
+    <div class="table-header">
+      <div class="table-title-area">
+        <div class="table-heading-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="5" y="3" width="14" height="18" rx="2"
+                  stroke="currentColor" stroke-width="1.7"/>
+            <path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h2"
+                  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="table-kicker">PRODUCTION PLANNING</div>
+          <h2>Material Requirement Calculator</h2>
+          <p>Calculate material requirements for an order quantity.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="calculator-form">
+      <div class="input-group">
+        <label for="calculatorProduct">Product <span class="required">*</span></label>
+        <div class="input-shell">
+          <span class="input-icon">#</span>
+          <select id="calculatorProduct" name="calculatorProduct" [(ngModel)]="productId">
+            <option [ngValue]="0">Select Product</option>
+            @for (product of products; track product.productId) {
+            <option [ngValue]="product.productId">
+              {{ product.productCode }} — {{ product.name }}
+            </option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="orderQuantity">Order Quantity <span class="required">*</span></label>
+        <div class="input-shell">
+          <span class="input-icon">#</span>
+          <input
+            id="orderQuantity"
+            name="orderQuantity"
+            type="number"
+            [(ngModel)]="orderQuantity"
+            min="1"
+            step="1"
+            placeholder="Enter order quantity">
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="save-btn calculate-button"
+        (click)="calculateMaterial()"
+        [disabled]="isCalculating || products.length === 0">
+        @if (isCalculating) {
+        <span class="action-icon">...</span>
+        <span>Calculating...</span>
+        } @else {
+        <span class="action-icon">×</span>
+        <span>Calculate Requirement</span>
+        }
+      </button>
+    </div>
+
+    @if (calculationError) {
+    <div class="error-message" role="alert">{{ calculationError }}</div>
+    }
+
+    @if (calculatedRequirements.length > 0) {
+    <div class="calculation-result" role="status">
+      <div class="result-icon">✓</div>
+      <div class="result-copy">
+        <div class="result-label">CALCULATION RESULT</div>
+        <h3>Material requirements calculated</h3>
+        <p>Required quantities for {{ orderQuantity }} units of {{ getProductName(productId) }}.</p>
+      </div>
+      <div class="result-lines">
+        @for (requirement of calculatedRequirements; track requirement.materialName + requirement.unit) {
+        <div class="result-line">
+          <strong>{{ requirement.materialName }}</strong>
+          <span>{{ requirement.quantity }} {{ requirement.unit }}</span>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <div class="calculator-note">
+      <span class="note-icon">i</span>
+      <span>
+        Requirements are calculated by the backend and shown separately so different materials and units stay distinct.
+      </span>
+    </div>
+  </section>
+
+  <footer class="bom-footer">
+    <span>OrderCraft ERP <span class="footer-separator">·</span> Bill of Materials</span>
+    <span class="footer-sync">
+      <span class="toolbar-dot"></span>
+      BOM module connected
+    </span>
+  </footer>
+
+</div>

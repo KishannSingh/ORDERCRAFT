@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.Invoice;
 import com.ordercraft.ordercraft.service.InvoiceService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,7 +22,9 @@ public class InvoiceController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Invoice addInvoice(@RequestBody Invoice invoice) {
+        if (invoice != null) invoice.setInvoiceId(null);
         return invoiceService.saveInvoice(invoice);
     }
 
@@ -42,6 +46,10 @@ public class InvoiceController {
             @PathVariable Long id,
             @RequestBody Invoice invoice) {
 
+        if (invoice == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invoice data is required");
+        }
+
         Invoice existingInvoice =
                 invoiceService.getInvoiceById(id);
 
@@ -55,6 +63,7 @@ public class InvoiceController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteInvoice(@PathVariable Long id) {
         invoiceService.deleteInvoice(id);
     }

@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.SalesOrderItem;
 import com.ordercraft.ordercraft.service.SalesOrderItemService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,7 +22,9 @@ public class SalesOrderItemController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public SalesOrderItem addItem(@RequestBody SalesOrderItem item) {
+        if (item != null) item.setItemId(null);
         return service.saveItem(item);
     }
 
@@ -28,6 +32,13 @@ public class SalesOrderItemController {
     @GetMapping
     public List<SalesOrderItem> getAllItems() {
         return service.getAllItems();
+    }
+
+    @GetMapping("/order/{orderId}")
+    public List<SalesOrderItem> getItemsByOrder(
+            @PathVariable Long orderId
+    ) {
+        return service.getItemsByOrderId(orderId);
     }
 
 
@@ -42,6 +53,10 @@ public class SalesOrderItemController {
             @PathVariable Long id,
             @RequestBody SalesOrderItem item) {
 
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order item data is required");
+        }
+
         SalesOrderItem existingItem =
                 service.getItemById(id);
 
@@ -55,6 +70,7 @@ public class SalesOrderItemController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteItem(@PathVariable Long id) {
         service.deleteItem(id);
     }

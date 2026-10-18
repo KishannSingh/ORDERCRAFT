@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.Customer;
 import com.ordercraft.ordercraft.service.CustomerService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,7 +21,9 @@ public class CustomerController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Customer addCustomer(@RequestBody Customer customer) {
+        if (customer != null) customer.setCustomerId(null);
         return customerService.saveCustomer(customer);
     }
 
@@ -41,6 +45,10 @@ public class CustomerController {
             @PathVariable Long id,
             @RequestBody Customer customer) {
 
+        if (customer == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Customer data is required");
+        }
+
         Customer existingCustomer =
                 customerService.getCustomerById(id);
 
@@ -53,6 +61,7 @@ public class CustomerController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCustomer(@PathVariable Long id) {
         customerService.deleteCustomer(id);
     }

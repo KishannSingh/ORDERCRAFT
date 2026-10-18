@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.SalesOrder;
 import com.ordercraft.ordercraft.service.SalesOrderService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,7 +22,9 @@ public class SalesOrderController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public SalesOrder addOrder(@RequestBody SalesOrder order) {
+        if (order != null) order.setOrderId(null);
         return salesOrderService.saveOrder(order);
     }
 
@@ -42,6 +46,10 @@ public class SalesOrderController {
             @PathVariable Long id,
             @RequestBody SalesOrder order) {
 
+        if (order == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sales order data is required");
+        }
+
         SalesOrder existingOrder =
                 salesOrderService.getOrderById(id);
 
@@ -55,6 +63,7 @@ public class SalesOrderController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrder(@PathVariable Long id) {
         salesOrderService.deleteOrder(id);
     }

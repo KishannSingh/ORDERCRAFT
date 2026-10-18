@@ -15,6 +15,8 @@ public class PurchaseOrder {
     private Long poId;
 
     private Long orderId;
+    // Nullable to preserve existing purchase-order rows after the additive schema update.
+    private Long bomId;
     private String materialName;
     private double quantity;
     private String status;
@@ -35,6 +37,15 @@ public class PurchaseOrder {
 
     public void setOrderId(Long orderId) {
         this.orderId = orderId;
+    }
+
+
+    public Long getBomId() {
+        return bomId;
+    }
+
+    public void setBomId(Long bomId) {
+        this.bomId = bomId;
     }
 
 

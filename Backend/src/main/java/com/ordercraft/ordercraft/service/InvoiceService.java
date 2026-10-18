@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -52,11 +52,26 @@ public class InvoiceService {
             );
         }
 
-        SalesOrder salesOrder = salesOrderRepository.findById(orderId)
+        Long invoiceId = invoice.getInvoiceId();
+        if (invoiceId != null && invoiceId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A valid invoice ID is required");
+        }
+
+        SalesOrder salesOrder = salesOrderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Sales order not found with id: " + orderId
                 ));
+
+        boolean anotherInvoiceExists = invoiceId == null
+                ? invoiceRepository.existsByOrderId(orderId)
+                : invoiceRepository.existsByOrderIdAndInvoiceIdNot(orderId, invoiceId);
+        if (anotherInvoiceExists) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A sales order can have only one invoice"
+            );
+        }
 
         if (invoice.getInvoiceDate() == null) {
             throw new ResponseStatusException(
@@ -74,18 +89,23 @@ public class InvoiceService {
             );
         }
 
-        if (invoice.getStatus() == null
-                || invoice.getStatus().isBlank()) {
-
+        if (!Double.isFinite(salesOrder.getTotalAmount())
+                || salesOrder.getTotalAmount() <= 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Invoice status is required"
+                    "The sales order must have a positive total before it can be invoiced"
+            );
+        }
+
+        if (!sameCurrencyAmount(invoice.getAmount(), salesOrder.getTotalAmount())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invoice amount must match the sales order total of "
+                            + salesOrder.getTotalAmount()
             );
         }
 
         // Do not allow an invoice amount below payments already received.
-        Long invoiceId = invoice.getInvoiceId();
-
         if (invoiceId != null) {
 
             Invoice existingInvoice = invoiceRepository.findById(invoiceId)
@@ -97,15 +117,16 @@ public class InvoiceService {
             List<Payment> existingPayments =
                     paymentRepository.findByInvoiceId(invoiceId);
 
-            double totalPaid = existingPayments.stream()
-                    .mapToDouble(Payment::getAmount)
-                    .sum();
+            BigDecimal totalPaid = existingPayments.stream()
+                    .map(Payment::getAmount)
+                    .map(BigDecimal::valueOf)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            if (invoice.getAmount() < totalPaid) {
+            if (BigDecimal.valueOf(invoice.getAmount()).compareTo(totalPaid) < 0) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Invoice amount cannot be less than payments already received. "
-                                + "Total paid: " + totalPaid
+                                + "Total paid: " + totalPaid.toPlainString()
                 );
             }
 
@@ -113,11 +134,11 @@ public class InvoiceService {
             invoice.setInvoiceId(existingInvoice.getInvoiceId());
         }
 
-        // Calculate payment status from actual payments, not client input.
-        if (invoiceId != null) {
-            updateInvoiceStatusForAmount(invoice);
-        } else {
+        // Payment state is always derived from persisted payments.
+        if (invoiceId == null) {
             invoice.setStatus("UNPAID");
+        } else {
+            updateInvoiceStatusForAmount(invoice);
         }
 
         return invoiceRepository.save(invoice);
@@ -181,18 +202,26 @@ public class InvoiceService {
     // SET STATUS BASED ON PAYMENTS FOR THE UPDATED AMOUNT
     private void updateInvoiceStatusForAmount(Invoice invoice) {
 
-        double totalPaid = paymentRepository
+        BigDecimal totalPaid = paymentRepository
                 .findByInvoiceId(invoice.getInvoiceId())
                 .stream()
-                .mapToDouble(Payment::getAmount)
-                .sum();
+                .map(Payment::getAmount)
+                .map(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (totalPaid <= 0) {
+        int comparison = totalPaid.compareTo(BigDecimal.ZERO);
+        if (comparison <= 0) {
             invoice.setStatus("UNPAID");
-        } else if (totalPaid < invoice.getAmount()) {
+        } else if (totalPaid.compareTo(BigDecimal.valueOf(invoice.getAmount())) < 0) {
             invoice.setStatus("PARTIALLY PAID");
         } else {
             invoice.setStatus("PAID");
         }
+    }
+
+    private boolean sameCurrencyAmount(double first, double second) {
+        return Math.abs(BigDecimal.valueOf(first)
+                .subtract(BigDecimal.valueOf(second))
+                .doubleValue()) < 0.005;
     }
 }

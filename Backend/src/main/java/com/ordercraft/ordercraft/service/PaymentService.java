@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 public class PaymentService {
@@ -43,7 +45,7 @@ public class PaymentService {
         if (existingPaymentId != null) {
 
             paymentToSave = paymentRepository
-                    .findById(existingPaymentId)
+                    .findByIdForUpdate(existingPaymentId)
                     .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.NOT_FOUND,
                             "Payment not found with id: "
@@ -63,12 +65,24 @@ public class PaymentService {
             paymentToSave = payment;
         }
 
-        // Check whether the target invoice exists.
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Invoice not found with id: " + invoiceId
-                ));
+        // Lock the affected invoice rows in a stable order so concurrent payments cannot
+        // both spend the same outstanding balance and status recalculation stays consistent.
+        List<Long> invoiceIdsToLock = Stream.of(invoiceId, oldInvoiceId)
+                .filter(id -> id != null)
+                .distinct()
+                .sorted()
+                .toList();
+        Invoice invoice = null;
+        for (Long affectedInvoiceId : invoiceIdsToLock) {
+            Invoice lockedInvoice = invoiceRepository.findByIdForUpdate(affectedInvoiceId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Invoice not found with id: " + affectedInvoiceId
+                    ));
+            if (invoiceId.equals(affectedInvoiceId)) {
+                invoice = lockedInvoice;
+            }
+        }
 
         // Validate invoice amount before accepting payment.
         if (!Double.isFinite(invoice.getAmount())
@@ -82,31 +96,28 @@ public class PaymentService {
 
         // Calculate existing payments for the target invoice.
         // Exclude the payment being updated.
-        double existingPaid = paymentRepository
+        BigDecimal existingPaid = paymentRepository
                 .findByInvoiceId(invoiceId)
                 .stream()
                 .filter(existing ->
                         existingPaymentId == null
                                 || !existing.getPaymentId()
                                 .equals(existingPaymentId))
-                .mapToDouble(Payment::getAmount)
-                .sum();
+                .map(Payment::getAmount)
+                .map(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        double newTotal = existingPaid + paymentToSave.getAmount();
+        BigDecimal newTotal = existingPaid.add(BigDecimal.valueOf(paymentToSave.getAmount()));
+        BigDecimal invoiceAmount = BigDecimal.valueOf(invoice.getAmount());
 
         // Prevent overpayment.
-        if (!Double.isFinite(newTotal)
-                || newTotal > invoice.getAmount()) {
-
-            double remainingBalance = Math.max(
-                    0,
-                    invoice.getAmount() - existingPaid
-            );
+        if (newTotal.compareTo(invoiceAmount) > 0) {
+            BigDecimal remainingBalance = invoiceAmount.subtract(existingPaid).max(BigDecimal.ZERO);
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Payment exceeds the remaining invoice balance. "
-                            + "Remaining balance: " + remainingBalance
+                            + "Remaining balance: " + remainingBalance.toPlainString()
             );
         }
 
@@ -134,6 +145,13 @@ public class PaymentService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Payment data is required"
+            );
+        }
+
+        if (payment.getPaymentId() != null && payment.getPaymentId() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A valid payment ID is required"
             );
         }
 
@@ -223,13 +241,19 @@ public class PaymentService {
             );
         }
 
-        Payment payment = paymentRepository.findById(id)
+        Payment payment = paymentRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Payment not found with id: " + id
                 ));
 
         Long invoiceId = payment.getInvoiceId();
+
+        invoiceRepository.findByIdForUpdate(invoiceId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Invoice not found with id: " + invoiceId
+                ));
 
         paymentRepository.delete(payment);
         paymentRepository.flush();
@@ -247,15 +271,17 @@ public class PaymentService {
                         "Invoice not found with id: " + invoiceId
                 ));
 
-        double totalPaid = paymentRepository
+        BigDecimal totalPaid = paymentRepository
                 .findByInvoiceId(invoiceId)
                 .stream()
-                .mapToDouble(Payment::getAmount)
-                .sum();
+                .map(Payment::getAmount)
+                .map(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (totalPaid <= 0) {
+        int comparison = totalPaid.compareTo(BigDecimal.ZERO);
+        if (comparison <= 0) {
             invoice.setStatus("UNPAID");
-        } else if (totalPaid < invoice.getAmount()) {
+        } else if (totalPaid.compareTo(BigDecimal.valueOf(invoice.getAmount())) < 0) {
             invoice.setStatus("PARTIALLY PAID");
         } else {
             invoice.setStatus("PAID");

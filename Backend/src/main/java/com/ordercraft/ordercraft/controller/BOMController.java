@@ -24,7 +24,9 @@ public class BOMController {
     // ADD BOM
     // =========================
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public BOM addBOM(@RequestBody BOM bom) {
+        if (bom != null) bom.setBomId(null);
         return bomService.saveBOM(bom);
     }
 
@@ -80,6 +82,10 @@ public class BOMController {
             @PathVariable Long id,
             @RequestBody BOM bom) {
 
+        if (bom == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "BOM data is required");
+        }
+
         BOM existingBOM =
                 bomService.getBOMById(id);
 
@@ -95,6 +101,7 @@ public class BOMController {
     // DELETE BOM
     // =========================
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBOM(@PathVariable Long id) {
         bomService.deleteBOM(id);
     }

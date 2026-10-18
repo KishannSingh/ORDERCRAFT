@@ -1,0 +1,468 @@
+<div class="purchase-page">
+
+  <!-- PAGE HEADING -->
+  <header class="page-heading">
+    <div class="heading-copy">
+      <span class="heading-kicker">PROCUREMENT MANAGEMENT</span>
+      <h1>Purchase Orders</h1>
+      <p>Manage and track your purchase orders and material requirements.</p>
+    </div>
+
+    <button type="button" class="add-btn" (click)="toggleForm()">
+      <span class="add-icon">{{ showForm ? '×' : '+' }}</span>
+      {{ showForm ? 'Close Form' : 'Add Purchase Order' }}
+    </button>
+  </header>
+
+  <!-- SUMMARY CARDS -->
+  <section class="purchase-stats">
+
+    <article class="purchase-stat-card">
+      <div class="stat-icon total-icon">PO</div>
+      <div class="stat-copy">
+        <span>Total Purchase Orders</span>
+        <strong>{{ purchaseOrders.length }}</strong>
+      </div>
+      <span class="stat-indicator"></span>
+    </article>
+
+    <article class="purchase-stat-card">
+      <div class="stat-icon planning-icon">MP</div>
+      <div class="stat-copy">
+        <span>Material Planning</span>
+        <strong class="active-value">Active</strong>
+      </div>
+      <span class="status-indicator"></span>
+    </article>
+
+    <article class="purchase-stat-card">
+      <div class="stat-icon synced-icon">DS</div>
+      <div class="stat-copy">
+        <span>Data Status</span>
+        <strong class="synced-value">
+          {{ loading ? 'Loading' : (errorMessage ? 'Offline' : 'Synced') }}
+        </strong>
+      </div>
+      <span class="status-indicator"></span>
+    </article>
+
+  </section>
+
+  <!-- ERROR MESSAGE -->
+  @if (errorMessage) {
+  <div class="error-message" role="alert">
+    {{ errorMessage }}
+    <button type="button" (click)="loadPurchaseOrders()">Retry</button>
+  </div>
+  }
+  @if (successMessage) {
+  <div class="success-message" role="status">{{ successMessage }}</div>
+  }
+  @if (referenceError) {
+  <div class="error-message" role="alert">
+    {{ referenceError }}
+    <button type="button" (click)="loadReferences()">Retry related data</button>
+  </div>
+  }
+
+  <!-- ADD / EDIT FORM -->
+  @if (showForm) {
+  <section class="form-card">
+
+    <div class="form-header">
+      <div>
+        <span class="section-kicker">PROCUREMENT</span>
+        <h2>
+          {{ editingId !== null
+          ? 'Edit Purchase Order'
+          : 'Create Purchase Order' }}
+        </h2>
+        <p>Enter the sales order and required material details.</p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Close form"
+        (click)="cancelEdit()">
+        ×
+      </button>
+    </div>
+
+    <form
+      class="form-grid"
+      (ngSubmit)="savePurchaseOrder()">
+
+      <!-- SALES ORDER -->
+      <div class="input-group">
+        <label for="orderId">Sales Order</label>
+
+        <div class="input-shell">
+          <select
+            id="orderId"
+            name="orderId"
+            [(ngModel)]="newPurchaseOrder.orderId"
+            (ngModelChange)="onOrderSelected()"
+            required>
+
+            <option [ngValue]="null" disabled>
+              Select sales order
+            </option>
+
+            @for (order of salesOrders; track order.orderId) {
+            <option [ngValue]="order.orderId">
+              Order #{{ order.orderId }}
+              @if (order.customerName) {
+              — {{ order.customerName }}
+              }
+            </option>
+            }
+
+          </select>
+        </div>
+      </div>
+
+      <!-- BOM MATERIAL -->
+      <div class="input-group">
+        <label for="bomId">BOM Material</label>
+
+        <div class="input-shell">
+          <select
+            id="bomId"
+            name="bomId"
+            [(ngModel)]="newPurchaseOrder.bomId"
+            (ngModelChange)="onBomSelected()"
+            [disabled]="referencesLoading || newPurchaseOrder.orderId === null"
+            required>
+            <option [ngValue]="null" disabled>Select a material for this order</option>
+            @for (bom of eligibleBomMaterials; track bom.bomId) {
+            <option [ngValue]="bom.bomId">
+              {{ getProductLabel(bom.productId) }} — {{ bom.materialName }} ({{ bom.quantity }} {{ bom.unit }} / product)
+            </option>
+            }
+          </select>
+        </div>
+        @if (newPurchaseOrder.orderId !== null && eligibleBomMaterials.length === 0) {
+        <small class="field-hint">Add a product to this sales order and define its BOM before procurement.</small>
+        }
+        @if (newPurchaseOrder.bomId !== null) {
+        <small class="field-hint">
+          Required: {{ requiredQuantity(newPurchaseOrder.bomId) }}.
+          Remaining to procure: {{ remainingQuantity(newPurchaseOrder.bomId) }}.
+        </small>
+        }
+      </div>
+
+      <!-- QUANTITY -->
+      <div class="input-group">
+        <label for="quantity">Quantity</label>
+
+        <div class="input-shell">
+          <input
+            id="quantity"
+            name="quantity"
+            type="number"
+            min="0.01"
+            step="any"
+            placeholder="Enter quantity"
+            [(ngModel)]="newPurchaseOrder.quantity"
+            [max]="purchaseQuantityLimit()"
+            required />
+        </div>
+        @if (newPurchaseOrder.bomId !== null) {
+        <small class="field-hint">Maximum for this status: {{ purchaseQuantityLimit() }}</small>
+        }
+      </div>
+
+      <!-- STATUS -->
+      <div class="input-group">
+        <label for="poStatus">Status</label>
+
+        <div class="input-shell">
+          <select
+            id="poStatus"
+            name="status"
+            [(ngModel)]="newPurchaseOrder.status"
+            required>
+
+            <option value="PENDING">Pending</option>
+            <option value="ORDERED">Ordered</option>
+            <option value="RECEIVED">Received</option>
+            <option value="CANCELLED">Cancelled</option>
+
+          </select>
+        </div>
+      </div>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions">
+
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="cancelEdit()"
+          [disabled]="saving">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="save-btn"
+          [disabled]="saving || loading">
+          {{
+          saving
+          ? 'Saving...'
+          : (editingId !== null
+          ? 'Update Purchase Order'
+          : 'Create Purchase Order')
+          }}
+        </button>
+
+      </div>
+
+    </form>
+  </section>
+  }
+
+  <!-- PURCHASE ORDER RECORDS -->
+  <section class="table-card">
+
+    <!-- TABLE HEADER -->
+    <div class="table-header">
+      <div class="table-title-area">
+        <span class="section-kicker">MATERIAL DEFINITIONS</span>
+        <h2>Purchase Order Records</h2>
+        <p>Review purchase orders and their material quantities.</p>
+      </div>
+
+      <div class="record-count-box">
+        <span class="record-count-label">RECORDS</span>
+        <strong>{{ purchaseOrders.length }}</strong>
+      </div>
+    </div>
+
+    <!-- TABLE TOOLBAR -->
+    <div class="table-toolbar">
+      <span class="table-toolbar-label">DATA OVERVIEW</span>
+
+      <span class="table-toolbar-note">
+        Showing <strong>{{ purchaseOrders.length }}</strong>
+        purchase order records
+      </span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrapper">
+
+      <table class="purchase-table">
+
+        <thead>
+        <tr>
+          <th>Purchase Order</th>
+          <th>Sales Order</th>
+          <th>Material Details</th>
+          <th>Quantity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <!-- LOADING STATE -->
+        @if (loading) {
+        <tr>
+          <td colspan="6" class="loading-cell">
+            {{ referencesLoading ? 'Loading procurement references...' : 'Loading purchase orders...' }}
+          </td>
+        </tr>
+        } @else {
+
+        <!-- PURCHASE ORDER LIST -->
+        @for (po of purchaseOrders; track po.poId) {
+        <tr>
+
+          <!-- PURCHASE ORDER ID -->
+          <td>
+                  <span class="id-badge">
+                    <span class="id-dot"></span>
+                    PO #{{ po.poId }}
+                  </span>
+          </td>
+
+          <!-- SALES ORDER ID -->
+          <td>
+                  <span class="order-badge">
+                    Order #{{ po.orderId }}
+                  </span>
+          </td>
+
+          <!-- MATERIAL DETAILS -->
+          <td>
+            <div class="material-cell">
+
+              <div class="material-avatar">
+                {{
+                po.materialName
+                ? po.materialName.charAt(0).toUpperCase()
+                : 'M'
+                }}
+              </div>
+
+              <div class="material-copy">
+                <strong>{{ po.materialName }}</strong>
+                @if (getBomForPurchaseOrder(po); as bom) {
+                <span>{{ getProductLabel(bom.productId) }} · {{ bom.quantity }} {{ bom.unit }} per product</span>
+                } @else {
+                <span>Legacy procurement material</span>
+                }
+              </div>
+
+            </div>
+          </td>
+
+          <!-- QUANTITY -->
+          <td>
+            <div class="quantity-cell">
+              <strong class="quantity-value">
+                {{ po.quantity }}
+              </strong>
+              <span class="quantity-unit">{{ getBomForPurchaseOrder(po)?.unit || 'units' }}</span>
+            </div>
+          </td>
+
+          <!-- STATUS -->
+          <td>
+                  <span
+                    class="status-badge"
+                    [class.pending]="po.status?.toUpperCase() === 'PENDING'"
+                    [class.ordered]="po.status?.toUpperCase() === 'ORDERED'"
+                    [class.received]="po.status?.toUpperCase() === 'RECEIVED'"
+                    [class.cancelled]="po.status?.toUpperCase() === 'CANCELLED'">
+
+                    <span class="status-dot"></span>
+                    {{ po.status || 'PENDING' }}
+
+                  </span>
+          </td>
+
+          <!-- EDIT / DELETE ACTIONS -->
+          <td>
+            <div class="action-buttons">
+
+              <!-- EDIT BUTTON -->
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="editPurchaseOrder(po)"
+                [disabled]="saving || deletingId === po.poId || po.poId == null"
+                aria-label="Edit purchase order"
+                title="Edit purchase order">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true">
+
+                  <path
+                    d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z">
+                  </path>
+
+                </svg>
+
+                <span>Edit</span>
+              </button>
+
+              <!-- DELETE BUTTON -->
+              <button
+                type="button"
+                class="delete-btn"
+                (click)="deletePurchaseOrder(po.poId!)"
+                [disabled]="saving || deletingId === po.poId || po.poId == null"
+                aria-label="Delete purchase order"
+                title="Delete purchase order">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true">
+
+                  <path d="M3 6h18"></path>
+                  <path d="M8 6V4h8v2"></path>
+                  <path d="M19 6l-1 14H6L5 6"></path>
+                  <path d="M10 11v5"></path>
+                  <path d="M14 11v5"></path>
+
+                </svg>
+
+                <span>Delete</span>
+              </button>
+
+            </div>
+          </td>
+
+        </tr>
+        } @empty {
+
+        <!-- EMPTY STATE -->
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+
+              <div class="empty-icon">PO</div>
+              <h3>No purchase orders yet</h3>
+
+              <p>
+                Create a purchase order to see your records here.
+              </p>
+
+              <button
+                type="button"
+                class="empty-add-btn"
+                (click)="toggleForm()">
+                + Add Purchase Order
+              </button>
+
+            </div>
+          </td>
+        </tr>
+
+        }
+        }
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLE FOOTER -->
+    <footer class="table-footer">
+      <span>
+        <span class="footer-status-dot"></span>
+        OrderCraft · Purchase Management
+      </span>
+
+      <strong>
+        Records displayed: {{ purchaseOrders.length }}
+      </strong>
+    </footer>
+
+  </section>
+
+  <!-- PAGE FOOTER -->
+  <footer class="purchase-footer">
+    <span>OrderCraft</span>
+    <span class="footer-separator">·</span>
+    <span>Order Management System</span>
+    <span class="footer-separator">·</span>
+    <strong>Purchase Orders</strong>
+  </footer>
+
+</div>

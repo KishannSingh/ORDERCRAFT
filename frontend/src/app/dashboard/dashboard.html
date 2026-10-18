@@ -1,0 +1,819 @@
+<!-- =========================================================
+     ORDERCRAFT — DASHBOARD
+     File: src/app/dashboard/dashboard.html
+     ========================================================= -->
+
+<div class="dashboard-page">
+
+  <!-- =======================================================
+       PAGE HEADER
+       ======================================================= -->
+
+  <section class="page-heading">
+
+    <div class="heading-copy">
+
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        BUSINESS OVERVIEW
+      </div>
+
+      <h1>Dashboard</h1>
+
+      <p>
+        Get a clear view of customers, products, orders, invoices and payments.
+      </p>
+
+    </div>
+
+    <div class="heading-meta">
+
+      <div class="live-badge">
+        <span class="live-dot"></span>
+
+        <span>{{ isLoading ? 'Loading' : (errorMessage ? 'Unavailable' : 'Live Data') }}</span>
+      </div>
+
+    </div>
+
+  </section>
+
+  @if (isLoading) {
+  <div class="dashboard-notice" role="status">Loading live OrderCraft data...</div>
+  }
+  @if (errorMessage) {
+  <div class="dashboard-notice error" role="alert">
+    {{ errorMessage }}
+    <button type="button" (click)="loadDashboard()">Retry</button>
+  </div>
+  }
+
+
+  <!-- =======================================================
+       KPI / STATS
+       ======================================================= -->
+
+  <section class="stats-grid">
+
+    <!-- Customers -->
+    <article class="stat-card stat-customers">
+
+      <div class="stat-top">
+        <div class="stat-icon customers">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20
+                 m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm5-6h4
+                 m-2-2v4"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+
+        <span class="stat-mini-label">CUSTOMERS</span>
+      </div>
+
+      <div class="stat-info">
+        <span>Total Customers</span>
+        <strong>{{ displayCount(totalCustomers()) }}</strong>
+      </div>
+
+    </article>
+
+
+    <!-- Products -->
+    <article class="stat-card stat-products">
+
+      <div class="stat-top">
+        <div class="stat-icon products">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5
+                 m0 0-8-4.5M8 5.25l8 4.5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <span class="stat-mini-label">CATALOG</span>
+      </div>
+
+      <div class="stat-info">
+        <span>Total Products</span>
+        <strong>{{ displayCount(totalProducts()) }}</strong>
+      </div>
+
+    </article>
+
+
+    <!-- Bill of Materials -->
+    <article class="stat-card stat-boms">
+      <div class="stat-top">
+        <div class="stat-icon boms">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 9 8-4.5M12 12l-8-4.5M12 12v9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <span class="stat-mini-label">MATERIAL PLAN</span>
+      </div>
+      <div class="stat-info">
+        <span>Total BOMs</span>
+        <strong>{{ displayCount(totalBoms()) }}</strong>
+      </div>
+    </article>
+
+
+    <!-- Orders -->
+    <article class="stat-card stat-orders">
+
+      <div class="stat-top">
+        <div class="stat-icon orders">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 5h16v14H4V5Zm4 4h8m-8 4h5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <span class="stat-mini-label">ORDERS</span>
+      </div>
+
+      <div class="stat-info">
+        <span>Total Orders</span>
+        <strong>{{ displayCount(totalOrders()) }}</strong>
+      </div>
+
+    </article>
+
+
+    <!-- Purchase Orders -->
+    <article class="stat-card stat-purchase-orders">
+      <div class="stat-top">
+        <div class="stat-icon purchase-orders">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 4h2l2.2 10.2a2 2 0 0 0 2 1.6h6.9a2 2 0 0 0 1.9-1.4L21 8H7M10 20h.01M18 20h.01M9 11h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <span class="stat-mini-label">PROCUREMENT</span>
+      </div>
+      <div class="stat-info">
+        <span>Purchase Orders</span>
+        <strong>{{ displayCount(totalPurchaseOrders()) }}</strong>
+      </div>
+    </article>
+
+
+    <!-- Invoices -->
+    <article class="stat-card stat-invoices">
+
+      <div class="stat-top">
+        <div class="stat-icon invoices">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M6 3h9l3 3v15H6V3Zm9 0v4h3M9 11h6M9 15h6"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <span class="stat-mini-label">BILLING</span>
+      </div>
+
+      <div class="stat-info">
+        <span>Total Invoices</span>
+        <strong>{{ displayCount(totalInvoices()) }}</strong>
+      </div>
+
+    </article>
+
+
+    <!-- Payments -->
+    <article class="stat-card stat-payments">
+
+      <div class="stat-top">
+        <div class="stat-icon payments">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 6.5h16v11H4v-11Zm3 3.5h3m-6-3.5 2-3h14l2 3"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            <path
+              d="M12 10v5
+                 m2-3.75c0-.7-.9-1.25-2-1.25s-2 .55-2 1.25.9 1.25
+                 2 1.25 2 .55 2 1.25-.9 1.25-2 1.25-2-.55-2-1.25"
+              stroke="currentColor"
+              stroke-width="1.25"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+
+        <span class="stat-mini-label">COLLECTIONS</span>
+      </div>
+
+      <div class="stat-info">
+        <span>Total Payments</span>
+        <strong>{{ displayCount(totalPayments()) }}</strong>
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =======================================================
+       MAIN ACTIVITY
+       ======================================================= -->
+
+  <section class="activity-grid">
+
+
+    <!-- =====================================================
+         RECENT SALES ORDERS
+         ===================================================== -->
+
+    <article class="dashboard-card activity-card">
+
+      <div class="card-header">
+
+        <div class="card-title-area">
+
+          <div class="section-icon orders">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 5h16v14H4V5Zm4 4h8m-8 4h5"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+
+          <div>
+            <h2>Recent Sales Orders</h2>
+
+            <p>
+              Latest customer orders and their current status
+            </p>
+          </div>
+
+        </div>
+
+        <div class="card-counter">
+          {{ displayCount(totalOrders()) }} total
+        </div>
+
+      </div>
+
+
+      @if (isLoading) {
+      <div class="dashboard-empty" role="status"><strong>Loading recent sales orders...</strong></div>
+      } @else if (errorMessage) {
+      <div class="dashboard-empty"><strong>Recent sales order data unavailable</strong></div>
+      } @else if (recentOrders().length > 0) {
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Order Date</th>
+            <th>Status</th>
+            <th>Total Amount</th>
+          </tr>
+          </thead>
+
+          <tbody>
+
+          @for (order of recentOrders(); track order.orderId) {
+
+          <tr>
+
+            <!-- Order -->
+            <td>
+                    <span class="id-badge">
+                      #{{ order.orderId }}
+                    </span>
+            </td>
+
+
+            <!-- Customer -->
+            <td>
+
+              <div class="table-person">
+
+                <div class="mini-avatar">
+                  C
+                </div>
+
+                <span class="customer-badge">
+                        Customer {{ order.customerId }}
+                      </span>
+
+              </div>
+
+            </td>
+
+
+            <!-- Date -->
+            <td>
+                    <span class="date-text">
+                      {{ order.orderDate }}
+                    </span>
+            </td>
+
+
+            <!-- Status -->
+            <td>
+
+                    <span
+                      class="status-badge"
+                      [class.pending]="order.status === 'PENDING'"
+                      [class.confirmed]="order.status === 'CONFIRMED'"
+                      [class.completed]="order.status === 'COMPLETED'"
+                      [class.cancelled]="order.status === 'CANCELLED'"
+                    >
+
+                      <span class="status-dot"></span>
+
+                      {{ order.status }}
+
+                    </span>
+
+            </td>
+
+
+            <!-- Amount -->
+            <td>
+              <strong class="amount">
+                ₹{{ order.totalAmount }}
+              </strong>
+            </td>
+
+          </tr>
+
+          }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      } @else {
+
+      <div class="dashboard-empty">
+
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 5h16v14H4V5Zm4 4h8m-8 4h5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+
+        <strong>No recent sales orders</strong>
+
+        <span>
+            New orders will appear here automatically.
+          </span>
+
+      </div>
+
+      }
+
+    </article>
+
+
+    <!-- =====================================================
+         RECENT PAYMENTS
+         ===================================================== -->
+
+    <article class="dashboard-card activity-card">
+
+      <div class="card-header">
+
+        <div class="card-title-area">
+
+          <div class="section-icon payments">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 6.5h16v11H4v-11Zm3 3.5h3m-6-3.5 2-3h14l2 3"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <div>
+            <h2>Recent Payments</h2>
+
+            <p>
+              Latest payment transactions
+            </p>
+          </div>
+
+        </div>
+
+        <div class="card-counter">
+          {{ displayCount(totalPayments()) }} total
+        </div>
+
+      </div>
+
+
+      @if (isLoading) {
+      <div class="dashboard-empty" role="status"><strong>Loading recent payments...</strong></div>
+      } @else if (errorMessage) {
+      <div class="dashboard-empty"><strong>Recent payment data unavailable</strong></div>
+      } @else if (recentPayments().length > 0) {
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>Invoice</th>
+            <th>Amount</th>
+            <th>Mode</th>
+          </tr>
+          </thead>
+
+          <tbody>
+
+          @for (payment of recentPayments(); track payment.paymentId) {
+
+          <tr>
+
+            <!-- Payment ID -->
+            <td>
+                    <span class="id-badge">
+                      #{{ payment.paymentId }}
+                    </span>
+            </td>
+
+
+            <!-- Invoice -->
+            <td>
+
+                    <span class="invoice-badge">
+                      Invoice {{ payment.invoiceId }}
+                    </span>
+
+            </td>
+
+
+            <!-- Amount -->
+            <td>
+
+              <strong class="amount">
+                ₹{{ payment.amount }}
+              </strong>
+
+            </td>
+
+
+            <!-- Mode -->
+            <td>
+
+                    <span class="mode-badge">
+                      <span class="mode-dot"></span>
+                      {{ payment['mode'] }}
+                    </span>
+
+            </td>
+
+          </tr>
+
+          }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      } @else {
+
+      <div class="dashboard-empty">
+
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 6.5h16v11H4v-11Zm3 3.5h3"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+
+        <strong>No recent payments</strong>
+
+        <span>
+            New payment transactions will appear here.
+          </span>
+
+      </div>
+
+      }
+
+    </article>
+
+  </section>
+
+
+  <!-- =======================================================
+       SUMMARY SECTION
+       ======================================================= -->
+
+  <section class="summary-grid">
+
+
+    <!-- =====================================================
+         INVOICE SUMMARY
+         ===================================================== -->
+
+    <article class="dashboard-card summary-card">
+
+      <div class="card-header">
+
+        <div class="card-title-area">
+
+          <div class="section-icon invoices">
+
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M6 3h9l3 3v15H6V3Zm9 0v4h3M9 11h6M9 15h6"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+          </div>
+
+          <div>
+            <h2>Invoice Summary</h2>
+
+            <p>
+              Current invoice status overview
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="summary-content">
+
+        <!-- Paid -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon paid">
+              ✓
+            </span>
+
+            <span>
+              Paid Invoices
+            </span>
+
+          </div>
+
+          <strong class="summary-number paid-number">
+            {{ displayCount(paidInvoices()) }}
+          </strong>
+
+        </div>
+
+
+        <!-- Partial -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon partial">
+              ◐
+            </span>
+
+            <span>
+              Partial Invoices
+            </span>
+
+          </div>
+
+          <strong class="summary-number partial-number">
+            {{ displayCount(partialInvoices()) }}
+          </strong>
+
+        </div>
+
+
+        <!-- Unpaid -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon unpaid">
+              !
+            </span>
+
+            <span>
+              Unpaid Invoices
+            </span>
+
+          </div>
+
+          <strong class="summary-number unpaid-number">
+            {{ displayCount(unpaidInvoices()) }}
+          </strong>
+
+        </div>
+
+      </div>
+
+    </article>
+
+
+    <!-- =====================================================
+         ORDER OVERVIEW
+         ===================================================== -->
+
+    <article class="dashboard-card summary-card">
+
+      <div class="card-header">
+
+        <div class="card-title-area">
+
+          <div class="section-icon orders">
+
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 5h16v14H4V5Zm4 4h8m-8 4h5"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+            </svg>
+
+          </div>
+
+          <div>
+            <h2>Order Overview</h2>
+
+            <p>
+              Current sales order status
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="summary-content">
+
+        <!-- Pending -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon pending">
+              ◷
+            </span>
+
+            <span>
+              Pending Orders
+            </span>
+
+          </div>
+
+          <strong class="summary-number pending-number">
+            {{ displayCount(pendingOrders()) }}
+          </strong>
+
+        </div>
+
+
+        <!-- Confirmed -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon confirmed">
+              ✓
+            </span>
+
+            <span>
+              Confirmed Orders
+            </span>
+
+          </div>
+
+          <strong class="summary-number confirmed-number">
+            {{ displayCount(confirmedOrders()) }}
+          </strong>
+
+        </div>
+
+
+        <!-- Completed -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon completed">
+              ✓
+            </span>
+
+            <span>
+              Completed Orders
+            </span>
+
+          </div>
+
+          <strong class="summary-number completed-number">
+            {{ displayCount(completedOrders()) }}
+          </strong>
+
+        </div>
+
+
+        <!-- Cancelled -->
+        <div class="summary-status">
+
+          <div class="summary-left">
+
+            <span class="summary-status-icon cancelled">
+              ×
+            </span>
+
+            <span>
+              Cancelled Orders
+            </span>
+
+          </div>
+
+          <strong class="summary-number cancelled-number">
+            {{ displayCount(cancelledOrders()) }}
+          </strong>
+
+        </div>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =======================================================
+       DASHBOARD FOOTER
+       ======================================================= -->
+
+  <div class="dashboard-footer">
+
+    <div class="footer-status">
+      <span class="footer-status-dot"></span>
+
+      <span>
+        {{ isLoading ? 'Loading business data...' : (errorMessage ? 'Business data unavailable' : 'Dashboard is connected to live business data') }}
+      </span>
+    </div>
+
+    <span>
+      OrderCraft ERP
+    </span>
+
+  </div>
+
+</div>

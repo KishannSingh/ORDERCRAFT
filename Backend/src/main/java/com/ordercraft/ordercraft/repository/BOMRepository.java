@@ -9,4 +9,6 @@ public interface BOMRepository extends JpaRepository<BOM, Long> {
 
     List<BOM> findByProductId(Long productId);
 
+    boolean existsByProductId(Long productId);
+
 }

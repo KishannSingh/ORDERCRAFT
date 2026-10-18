@@ -2,6 +2,7 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.Product;
 import com.ordercraft.ordercraft.service.ProductService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,10 +19,11 @@ public class ProductController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Product addProduct(
             @RequestBody Product product
     ) {
-
+        if (product != null) product.setProductId(null);
         return productService.saveProduct(product);
     }
 
@@ -52,6 +54,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(
             @PathVariable Long id
     ) {

@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.PurchaseOrder;
 import com.ordercraft.ordercraft.service.PurchaseOrderService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -21,9 +23,10 @@ public class PurchaseOrderController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public PurchaseOrder addPurchaseOrder(
             @RequestBody PurchaseOrder purchaseOrder) {
-
+        if (purchaseOrder != null) purchaseOrder.setPoId(null);
         return purchaseOrderService
                 .savePurchaseOrder(purchaseOrder);
     }
@@ -51,11 +54,16 @@ public class PurchaseOrderController {
             @PathVariable Long id,
             @RequestBody PurchaseOrder purchaseOrder) {
 
+        if (purchaseOrder == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purchase order data is required");
+        }
+
         PurchaseOrder existing =
                 purchaseOrderService
                         .getPurchaseOrderById(id);
 
         existing.setOrderId(purchaseOrder.getOrderId());
+        existing.setBomId(purchaseOrder.getBomId());
         existing.setMaterialName(
                 purchaseOrder.getMaterialName()
         );
@@ -72,6 +80,7 @@ public class PurchaseOrderController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePurchaseOrder(
             @PathVariable Long id) {
 

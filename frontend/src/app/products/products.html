@@ -1,0 +1,920 @@
+<div class="products-page">
+
+  <!-- =====================================================
+       PAGE HEADER
+       ===================================================== -->
+
+  <section class="page-heading">
+
+    <div class="heading-copy">
+
+      <div class="heading-kicker">
+
+        <span class="heading-kicker-dot"></span>
+
+        PRODUCT CATALOG
+
+      </div>
+
+
+      <h1>
+        Products
+      </h1>
+
+
+      <p>
+        Manage products, pricing and catalog information from one place.
+      </p>
+
+    </div>
+
+
+    <button
+      type="button"
+      class="primary-btn"
+      (click)="openAddForm()"
+    >
+
+      <span class="btn-icon">
+        +
+      </span>
+
+      <span>
+        Add Product
+      </span>
+
+    </button>
+
+  </section>
+
+  @if (errorMessage) {
+  <div class="api-message error-message" role="alert">{{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+  <div class="api-message success-message" role="status">{{ successMessage }}</div>
+  }
+
+
+  <!-- =====================================================
+       PRODUCT STATS
+       ===================================================== -->
+
+  <section class="product-stats">
+
+
+    <!-- TOTAL PRODUCTS -->
+
+    <article class="product-stat-card">
+
+      <div class="product-stat-icon catalog">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m0 0-8-4.5M8 5.25l8 4.5"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div>
+
+        <span>
+          Total Products
+        </span>
+
+        <strong>
+          {{ products().length }}
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <!-- CATALOG STATUS -->
+
+    <article class="product-stat-card">
+
+      <div class="product-stat-icon pricing">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M12 3v18m4-14.5c0-1.1-1.8-2-4-2s-4 .9-4 2 1.8 2 4 2 4 .9 4 2-1.8 2-4 2-4 .9-4 2 1.8 2 4 2 4-.9 4-2"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div>
+
+        <span>
+          Catalog Status
+        </span>
+
+        <strong class="status-text">
+          Active
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <!-- DATA STATUS -->
+
+    <article class="product-stat-card">
+
+      <div class="product-stat-icon synced">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M20 7v5h-5M4 17v-5h5M19.2 12A7.5 7.5 0 0 0 6.3 7.2L4 9M4.8 12a7.5 7.5 0 0 0 12.9 4.8L20 15"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div>
+
+        <span>
+          Data Status
+        </span>
+
+        <strong class="status-text synced-text">
+
+          {{
+          isLoading()
+          ? 'Syncing'
+          : 'Synced'
+          }}
+
+        </strong>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =====================================================
+       ADD / EDIT FORM
+       ===================================================== -->
+
+  @if (showForm) {
+
+  <section class="form-card">
+
+
+    <div class="form-header">
+
+      <div class="form-title-area">
+
+
+        <div class="form-icon">
+
+          {{
+          editingProductId !== null
+          ? '✎'
+          : '+'
+          }}
+
+        </div>
+
+
+        <div>
+
+          <div class="form-kicker">
+
+            {{
+            editingProductId !== null
+            ? 'PRODUCT RECORD'
+            : 'NEW PRODUCT'
+            }}
+
+          </div>
+
+
+          <h2>
+
+            {{
+            editingProductId !== null
+            ? 'Edit Product'
+            : 'Add New Product'
+            }}
+
+          </h2>
+
+
+          <p>
+
+            {{
+            editingProductId !== null
+            ? 'Update product information and pricing.'
+            : 'Enter product details and pricing information.'
+            }}
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <span class="form-badge">
+
+          {{
+            editingProductId !== null
+              ? 'EDIT MODE'
+              : 'NEW PRODUCT'
+          }}
+
+        </span>
+
+    </div>
+
+
+    <div class="form-divider"></div>
+
+
+    <div class="form-grid">
+
+
+      <!-- PRODUCT CODE -->
+
+      <div class="input-group">
+
+        <label for="productCode">
+          Product Code
+        </label>
+
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+              #
+            </span>
+
+
+          <input
+            id="productCode"
+            type="text"
+            placeholder="e.g. P004"
+            maxlength="50"
+            [(ngModel)]="newProduct.productCode"
+            [disabled]="isSaving"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- PRODUCT NAME -->
+
+      <div class="input-group">
+
+        <label for="productName">
+          Product Name
+        </label>
+
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+
+                <path
+                  d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m0 0-8-4.5"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linejoin="round"
+                />
+
+              </svg>
+
+            </span>
+
+
+          <input
+            id="productName"
+            type="text"
+            placeholder="Enter product name"
+            maxlength="150"
+            [(ngModel)]="newProduct.name"
+            [disabled]="isSaving"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- PRICE -->
+
+      <div class="input-group">
+
+        <label for="productPrice">
+          Price
+        </label>
+
+
+        <div class="input-shell">
+
+            <span class="input-icon currency-icon">
+              ₹
+            </span>
+
+
+          <input
+            id="productPrice"
+            type="number"
+            min="1"
+            step="0.01"
+            placeholder="Enter price"
+            [(ngModel)]="newProduct.price"
+            [disabled]="isSaving"
+          />
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- FORM ACTIONS -->
+
+    <div class="form-actions">
+
+
+      <button
+        type="button"
+        class="save-btn"
+        (click)="saveProduct()"
+        [disabled]="isSaving"
+      >
+
+        @if (isSaving) {
+
+        <span class="action-icon">
+              ...
+            </span>
+
+        <span>
+              Saving...
+            </span>
+
+        } @else {
+
+        <span class="action-icon">
+              ✓
+            </span>
+
+        <span>
+
+              {{
+                editingProductId !== null
+                  ? 'Update Product'
+                  : 'Save Product'
+              }}
+
+            </span>
+
+        }
+
+      </button>
+
+
+      <button
+        type="button"
+        class="cancel-btn"
+        (click)="cancelEdit()"
+        [disabled]="isSaving"
+      >
+
+        Cancel
+
+      </button>
+
+    </div>
+
+  </section>
+
+  }
+
+
+  <!-- =====================================================
+       PRODUCT TABLE
+       ===================================================== -->
+
+  <section class="table-card">
+
+
+    <!-- TABLE HEADER -->
+
+    <div class="table-header">
+
+
+      <div class="table-title-area">
+
+
+        <div class="table-heading-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+
+            <path
+              d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm0 0v9m8-4.5-8 4.5m0 0-8-4.5M8 5.25l8 4.5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+
+          </svg>
+
+        </div>
+
+
+        <div>
+
+          <div class="table-kicker">
+            PRODUCT DIRECTORY
+          </div>
+
+
+          <h2>
+            Product List
+          </h2>
+
+
+          <p>
+
+            {{ products().length }}
+
+            {{
+            products().length === 1
+            ? 'product'
+            : 'products'
+            }}
+
+            available in the catalog
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="record-count-box">
+
+        <span>
+          Total
+        </span>
+
+
+        <strong>
+          {{ products().length }}
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         PRODUCT DATA
+         =================================================== -->
+
+    @if (products().length > 0) {
+
+
+    <!-- TOOLBAR -->
+
+    <div class="table-toolbar">
+
+
+      <div class="toolbar-result">
+
+        Showing
+
+        <strong>
+          {{ products().length }}
+        </strong>
+
+        {{
+        products().length === 1
+        ? 'product'
+        : 'products'
+        }}
+
+      </div>
+
+
+      <div class="toolbar-status">
+
+        <span class="toolbar-dot"></span>
+
+        Catalog Live
+
+      </div>
+
+    </div>
+
+
+    <!-- TABLE -->
+
+    <div class="table-wrapper">
+
+      <table>
+
+
+        <thead>
+
+        <tr>
+
+          <th>
+            ID
+          </th>
+
+          <th>
+            Product
+          </th>
+
+          <th>
+            Product Code
+          </th>
+
+          <th>
+            Price
+          </th>
+
+          <th>
+            Status
+          </th>
+
+          <th>
+            Actions
+          </th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+
+        @for (
+        product of products();
+        track product.productId
+        ) {
+
+
+        <tr>
+
+
+          <!-- ID -->
+
+          <td>
+
+                  <span class="id-badge">
+
+                    #{{ product.productId }}
+
+                  </span>
+
+          </td>
+
+
+          <!-- PRODUCT -->
+
+          <td>
+
+            <div class="product-profile">
+
+
+                    <span class="product-avatar">
+
+                      {{
+                        (product.name || 'P')
+                          .charAt(0)
+                          .toUpperCase()
+                      }}
+
+                    </span>
+
+
+              <div class="product-profile-copy">
+
+
+                <strong>
+
+                  {{
+                  product.name ||
+                  'Unnamed Product'
+                  }}
+
+                </strong>
+
+
+                <span>
+                        Catalog product
+                      </span>
+
+              </div>
+
+            </div>
+
+          </td>
+
+
+          <!-- CODE -->
+
+          <td>
+
+                  <span class="code-badge">
+
+                    {{
+                      product.productCode ||
+                      'No code'
+                    }}
+
+                  </span>
+
+          </td>
+
+
+          <!-- PRICE -->
+
+          <td>
+
+            <div class="price-cell">
+
+                    <span class="price-currency">
+                      ₹
+                    </span>
+
+              <strong>
+                {{ product.price }}
+              </strong>
+
+            </div>
+
+          </td>
+
+
+          <!-- STATUS -->
+
+          <td>
+
+                  <span
+                    class="status-badge active-status"
+                  >
+
+                    <span class="status-dot"></span>
+
+                    Active
+
+                  </span>
+
+          </td>
+
+
+          <!-- ACTIONS -->
+
+          <td>
+
+            <div class="action-buttons">
+
+
+              <!-- EDIT -->
+
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="editProduct(product)"
+                [disabled]="isSaving || deletingId === product.productId"
+              >
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+
+                  <path
+                    d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                </svg>
+
+
+                <span>
+                        Edit
+                      </span>
+
+              </button>
+
+
+              <!-- DELETE -->
+
+              <button
+                type="button"
+                class="delete-btn"
+                (click)="deleteProduct(product.productId)"
+                [disabled]="isSaving"
+              >
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+
+                  <path
+                    d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                </svg>
+
+
+                <span>{{ deletingId === product.productId ? 'Deleting...' : 'Delete' }}</span>
+
+              </button>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+        }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- TABLE FOOTER -->
+
+    <div class="table-footer">
+
+        <span>
+
+          {{ products().length }}
+
+          {{
+            products().length === 1
+              ? 'total record'
+              : 'total records'
+          }}
+
+        </span>
+
+
+      <span class="footer-sync">
+
+          <span class="toolbar-dot"></span>
+
+          Data synced
+
+        </span>
+
+    </div>
+
+    }
+
+
+    <!-- ===================================================
+         EMPTY STATE
+         =================================================== -->
+
+    @if (
+    products().length === 0 &&
+    !isLoading()
+    ) {
+
+
+    <div class="empty-state">
+
+
+      <div class="empty-illustration">
+
+        <svg
+          viewBox="0 0 48 48"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="m24 6 15 8.5v19L24 42 9 33.5v-19L24 6Z"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M24 6v18m15-9.5L24 24 9 14.5M16 10.5l15 8.7"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div class="empty-copy">
+
+
+        <div class="empty-kicker">
+          PRODUCT CATALOG
+        </div>
+
+
+        <h3>
+          No Products Yet
+        </h3>
+
+
+        <p>
+          Add your first product to start building
+          your OrderCraft catalog.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="empty-btn"
+        (click)="openAddForm()"
+      >
+
+          <span>
+            +
+          </span>
+
+        Add First Product
+
+      </button>
+
+    </div>
+
+    }
+
+  </section>
+
+</div>

@@ -1,0 +1,891 @@
+<div class="customers-page">
+
+  <!-- =====================================================
+       PAGE HEADER
+       ===================================================== -->
+
+  <section class="page-heading">
+
+    <div class="heading-copy">
+
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        CUSTOMER MANAGEMENT
+      </div>
+
+      <h1>Customers</h1>
+
+      <p>
+        Manage customer profiles, contact details and account information.
+      </p>
+
+    </div>
+
+    <button
+      type="button"
+      class="primary-btn"
+      (click)="showForm = !showForm"
+    >
+      <span class="btn-icon">
+        {{ showForm ? '×' : '+' }}
+      </span>
+
+      <span>
+        {{ showForm ? 'Close Form' : 'Add Customer' }}
+      </span>
+    </button>
+
+  </section>
+
+
+  @if (errorMessage) {
+  <div class="api-message error-message" role="alert">{{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+  <div class="api-message success-message" role="status">{{ successMessage }}</div>
+  }
+
+  <!-- =====================================================
+       CUSTOMER SUMMARY
+       ===================================================== -->
+
+  <section class="customer-stats">
+
+    <article class="customer-stat-card">
+
+      <div class="customer-stat-icon total">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20
+               m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm5-6h4"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Total Customers</span>
+
+        <strong>
+          {{ customers().length }}
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <article class="customer-stat-card">
+
+      <div class="customer-stat-icon active">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="m5 12 4 4L19 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Customer Records</span>
+
+        <strong>
+          {{ customers().length }}
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <article class="customer-stat-card">
+
+      <div class="customer-stat-icon secure">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 3 19 6v5c0 4.4-2.9 8.1-7 10-4.1-1.9-7-5.6-7-10V6l7-3Zm-3 9 2 2 4-4"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Data Status</span>
+
+        <strong class="secure-text">
+          Synced
+        </strong>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =====================================================
+       ADD / EDIT CUSTOMER FORM
+       ===================================================== -->
+
+  @if (showForm) {
+
+  <section class="form-card">
+
+    <div class="form-header">
+
+      <div class="form-header-left">
+
+        <div class="form-icon">
+
+          @if (editingId !== null) {
+          ✎
+          } @else {
+          +
+          }
+
+        </div>
+
+        <div>
+
+          <div class="form-kicker">
+            {{
+            editingId !== null
+            ? 'CUSTOMER RECORD'
+            : 'NEW RECORD'
+            }}
+          </div>
+
+          <h2>
+            {{
+            editingId !== null
+            ? 'Edit Customer'
+            : 'Add New Customer'
+            }}
+          </h2>
+
+          <p>
+            {{
+            editingId !== null
+            ? 'Update the customer information below.'
+            : 'Enter the customer contact information below.'
+            }}
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <span class="form-badge">
+          {{
+            editingId !== null
+              ? 'EDIT MODE'
+              : 'NEW CUSTOMER'
+          }}
+        </span>
+
+    </div>
+
+
+    <div class="form-divider"></div>
+
+
+    <div class="form-grid">
+
+      <!-- NAME -->
+
+      <div class="input-group">
+
+        <label for="customerName">
+          Customer Name
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20
+                     m6-9a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                />
+              </svg>
+
+            </span>
+
+          <input
+            id="customerName"
+            type="text"
+            [(ngModel)]="newCustomer.name"
+            placeholder="Enter customer name"
+            autocomplete="name"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- EMAIL -->
+
+      <div class="input-group">
+
+        <label for="customerEmail">
+          Email Address
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 6h16v12H4V6Zm1 1 7 5 7-5"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+            </span>
+
+          <input
+            id="customerEmail"
+            type="email"
+            [(ngModel)]="newCustomer.email"
+            placeholder="customer@example.com"
+            autocomplete="email"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- PHONE -->
+
+      <div class="input-group">
+
+        <label for="customerPhone">
+          Phone Number
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7 3h3l1.2 4-2 1.5a14 14 0 0 0 6.3 6.3L17 13l4 1.2v3
+                     a2 2 0 0 1-2 2C11.3 19.2 4.8 12.7 4.8 5A2 2 0 0 1 7 3Z"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+            </span>
+
+          <input
+            id="customerPhone"
+            type="tel"
+            [(ngModel)]="newCustomer.phone"
+            placeholder="Enter phone number"
+            autocomplete="tel"
+          />
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- FORM ACTIONS -->
+
+    <div class="form-actions">
+
+      <button
+        type="button"
+        class="save-btn"
+        (click)="saveCustomer()"
+        [disabled]="isSaving"
+      >
+
+          <span class="action-icon">
+            {{ isSaving ? '...' : '✓' }}
+          </span>
+
+        {{
+        isSaving
+        ? 'Saving...'
+        : editingId !== null
+        ? 'Update Customer'
+        : 'Save Customer'
+        }}
+
+      </button>
+
+
+      <button
+        type="button"
+        class="cancel-btn"
+        (click)="cancelEdit()"
+        [disabled]="isSaving"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </section>
+
+  }
+
+
+  <!-- =====================================================
+       CUSTOMER TABLE
+       ===================================================== -->
+
+  <section class="table-card">
+
+    <div class="table-header">
+
+      <div class="table-title-area">
+
+        <div class="table-heading-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 5h16v14H4V5Zm4 4h8m-8 4h5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+
+        </div>
+
+        <div>
+
+          <div class="table-kicker">
+            CUSTOMER DIRECTORY
+          </div>
+
+          <h2>
+            Customer List
+          </h2>
+
+          <p>
+            {{ customers().length }}
+            {{
+            customers().length === 1
+            ? 'customer'
+            : 'customers'
+            }}
+            available in the system
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="record-count-box">
+
+        <span>Total</span>
+
+        <strong>
+          {{ customers().length }}
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    @if (isLoading) {
+
+    <!-- =================================================
+         LOADING STATE
+         ================================================= -->
+
+    <div class="empty-state">
+
+      <div class="empty-illustration">
+        <span>...</span>
+      </div>
+
+      <div class="empty-copy">
+
+        <div class="empty-kicker">
+          CUSTOMER DIRECTORY
+        </div>
+
+        <h3>
+          Loading Customers
+        </h3>
+
+        <p>
+          Fetching customer records from the server.
+        </p>
+
+      </div>
+
+    </div>
+
+    } @else if (customers().length > 0) {
+
+    <!-- =================================================
+         TABLE TOOLBAR
+         ================================================= -->
+
+    <div class="table-toolbar">
+
+      <div class="toolbar-result">
+
+        Showing
+        <strong>{{ customers().length }}</strong>
+        customer records
+
+      </div>
+
+      <div class="toolbar-status">
+
+        <span class="toolbar-dot"></span>
+
+        Directory Live
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================
+         TABLE
+         ================================================= -->
+
+    <div class="table-wrapper">
+
+      <table>
+
+        <thead>
+
+        <tr>
+
+          <th>
+            Customer
+          </th>
+
+          <th>
+            Customer ID
+          </th>
+
+          <th>
+            Email Address
+          </th>
+
+          <th>
+            Phone Number
+          </th>
+
+          <th>
+            Status
+          </th>
+
+          <th>
+            Actions
+          </th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        @for (
+        customer of customers();
+        track customer.customerId
+        ) {
+
+        <tr>
+
+          <!-- CUSTOMER -->
+
+          <td>
+
+            <div class="customer-profile">
+
+                    <span class="avatar">
+
+                      {{
+                        (customer.name || 'C')
+                          .charAt(0)
+                          .toUpperCase()
+                      }}
+
+                    </span>
+
+
+              <div class="customer-profile-copy">
+
+                <strong>
+                  {{ customer.name || 'Unnamed Customer' }}
+                </strong>
+
+                <span>
+                        Customer account
+                      </span>
+
+              </div>
+
+            </div>
+
+          </td>
+
+
+          <!-- ID -->
+
+          <td>
+
+            @if (customer.customerId == null) {
+
+            <span class="saving-badge">
+                      Saving...
+                    </span>
+
+            } @else {
+
+            <span class="id-badge">
+                      #{{ customer.customerId }}
+                    </span>
+
+            }
+
+          </td>
+
+
+          <!-- EMAIL -->
+
+          <td>
+
+            <div class="email-cell">
+
+                    <span class="email-icon">
+                      @
+                    </span>
+
+              <span class="email-text">
+                      {{ customer.email || 'No email available' }}
+                    </span>
+
+            </div>
+
+          </td>
+
+
+          <!-- PHONE -->
+
+          <td>
+
+            <div class="phone-cell">
+
+                    <span class="phone-icon">
+
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M7 3h3l1.2 4-2 1.5a14 14 0 0 0 6.3 6.3L17 13l4 1.2v3
+                             a2 2 0 0 1-2 2C11.3 19.2 4.8 12.7 4.8 5A2 2 0 0 1 7 3Z"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+
+                    </span>
+
+              <span>
+                      {{ customer.phone || 'No phone available' }}
+                    </span>
+
+            </div>
+
+          </td>
+
+
+          <!-- STATUS -->
+
+          <td>
+
+            @if (customer.customerId == null) {
+
+            <span class="status-badge saving-status">
+
+                      <span class="status-dot"></span>
+
+                      Saving
+
+                    </span>
+
+            } @else {
+
+            <span class="status-badge active-status">
+
+                      <span class="status-dot"></span>
+
+                      Active
+
+                    </span>
+
+            }
+
+          </td>
+
+
+          <!-- ACTIONS -->
+
+          <td>
+
+            <div class="action-buttons">
+
+              @if (customer.customerId == null) {
+
+              <span class="saving-text">
+                        Saving...
+                      </span>
+
+              } @else {
+
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="editCustomer(customer)"
+              >
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+
+                <span>
+                          Edit
+                        </span>
+
+              </button>
+
+
+              <button
+                type="button"
+                class="delete-btn"
+                [disabled]="deletingId === customer.customerId"
+                (click)="deleteCustomer(customer.customerId)"
+              >
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                  />
+                </svg>
+
+                <span>
+                          Delete
+                        </span>
+
+              </button>
+
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+        }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- =================================================
+         TABLE FOOTER
+         ================================================= -->
+
+    <div class="table-footer">
+
+        <span>
+          {{ customers().length }} total records
+        </span>
+
+      <span class="footer-sync">
+
+          <span class="toolbar-dot"></span>
+
+          Data synced
+
+        </span>
+
+    </div>
+
+    } @else {
+
+    <!-- =================================================
+         EMPTY STATE
+         ================================================= -->
+
+    <div class="empty-state">
+
+      <div class="empty-illustration">
+
+        <svg
+          viewBox="0 0 48 48"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <rect
+            x="6"
+            y="7"
+            width="36"
+            height="34"
+            rx="7"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <circle
+            cx="18"
+            cy="19"
+            r="4"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+
+          <path
+            d="M11 35c1.8-5 4.5-7.5 8-7.5s6.2 2.5 8 7.5
+                 m5-15h4m-2-2v4"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div class="empty-copy">
+
+        <div class="empty-kicker">
+          CUSTOMER DIRECTORY
+        </div>
+
+        <h3>
+          No Customers Yet
+        </h3>
+
+        <p>
+          Add your first customer to start managing
+          customer information.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="empty-btn"
+        (click)="showForm = true"
+      >
+
+          <span>
+            +
+          </span>
+
+        Add First Customer
+
+      </button>
+
+    </div>
+
+    }
+
+  </section>
+
+</div>

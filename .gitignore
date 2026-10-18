@@ -1,0 +1,28 @@
+# Developer-local environment variables and credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local credential files and private key material
+**/.secrets
+**/.secrets.*
+**/.credentials
+**/.credentials.*
+**/credentials
+**/credentials.*
+**/secrets
+**/secrets.*
+**/*-credentials.*
+**/*_credentials.*
+**/*-secrets.*
+**/*_secrets.*
+**/application-local.properties
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore

@@ -10,4 +10,8 @@ public interface SalesOrderItemRepository
 
     List<SalesOrderItem> findByOrderId(Long orderId);
 
+    boolean existsByProductId(Long productId);
+
+    boolean existsByOrderId(Long orderId);
+
 }

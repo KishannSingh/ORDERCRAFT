@@ -1,0 +1,900 @@
+<div class="payments-page">
+
+  <!-- =====================================================
+       PAGE HEADER
+       ===================================================== -->
+
+  <section class="page-heading">
+
+    <div class="heading-copy">
+
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        PAYMENT MANAGEMENT
+      </div>
+
+      <h1>Payments</h1>
+
+      <p>
+        Record, manage and track invoice payment transactions.
+      </p>
+
+    </div>
+
+
+    <button
+      type="button"
+      class="primary-btn"
+      (click)="showForm = !showForm"
+    >
+
+      <span class="btn-icon">
+        {{ showForm ? '×' : '+' }}
+      </span>
+
+      <span>
+        {{ showForm ? 'Close Form' : 'Record Payment' }}
+      </span>
+
+    </button>
+
+  </section>
+
+  @if (errorMessage) {
+  <div class="api-notice error-notice" role="alert">{{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+  <div class="api-notice success-notice" role="status">{{ successMessage }}</div>
+  }
+
+
+  <!-- =====================================================
+       QUICK STATS
+       ===================================================== -->
+
+  <section class="payment-stats">
+
+    <!-- TOTAL PAYMENTS -->
+
+    <article class="payment-stat-card">
+
+      <div class="payment-stat-icon total">
+
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 6.5h16v11H4v-11Zm3 3.5h3m-6-3.5 2-3h14l2 3"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M12 10v5
+               m2-3.75c0-.7-.9-1.25-2-1.25s-2 .55-2 1.25.9 1.25
+               2 1.25 2 .55 2 1.25-.9 1.25-2 1.25-2-.55-2-1.25"
+            stroke="currentColor"
+            stroke-width="1.25"
+            stroke-linecap="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Total Payments</span>
+
+        <strong>
+          {{ payments().length }}
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <!-- COLLECTION -->
+
+    <article class="payment-stat-card">
+
+      <div class="payment-stat-icon collection">
+
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 3v18m4-14.5c0-1.1-1.8-2-4-2s-4 .9-4 2 1.8 2 4 2
+               4 .9 4 2-1.8 2-4 2-4 .9-4 2 1.8 2 4 2 4-.9 4-2"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Collection Module</span>
+
+        <strong class="status-text">
+          Active
+        </strong>
+
+      </div>
+
+    </article>
+
+
+    <!-- DATA STATUS -->
+
+    <article class="payment-stat-card">
+
+      <div class="payment-stat-icon synced">
+
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M20 7v5h-5
+               M4 17v-5h5
+               M19.2 12A7.5 7.5 0 0 0 6.3 7.2L4 9
+               m.8 3a7.5 7.5 0 0 0 12.9 4.8L20 15"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+      </div>
+
+      <div>
+
+        <span>Data Status</span>
+
+        <strong class="status-text synced-text">
+          Synced
+        </strong>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =====================================================
+       ADD / EDIT PAYMENT FORM
+       ===================================================== -->
+
+  @if (showForm) {
+
+  <section class="form-card">
+
+    <div class="form-header">
+
+      <div class="form-title-area">
+
+        <div class="form-icon">
+          {{ editingId !== null ? '✎' : '+' }}
+        </div>
+
+        <div>
+
+          <div class="form-kicker">
+
+            {{
+            editingId !== null
+            ? 'PAYMENT RECORD'
+            : 'NEW PAYMENT'
+            }}
+
+          </div>
+
+          <h2>
+
+            {{
+            editingId !== null
+            ? 'Edit Payment'
+            : 'Record New Payment'
+            }}
+
+          </h2>
+
+          <p>
+
+            {{
+            editingId !== null
+            ? 'Update payment transaction details.'
+            : 'Enter invoice payment information below.'
+            }}
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <span class="form-badge">
+
+          {{
+            editingId !== null
+              ? 'EDIT MODE'
+              : 'NEW PAYMENT'
+          }}
+
+        </span>
+
+    </div>
+
+
+    <div class="form-divider"></div>
+
+
+    <!-- ===================================================
+         FORM FIELDS
+         =================================================== -->
+
+    <div class="form-grid">
+
+      <!-- INVOICE ID -->
+
+      <div class="input-group">
+
+        <label for="invoiceId">
+          Invoice ID
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+              #
+            </span>
+
+          <select
+            id="invoiceId"
+            name="invoiceId"
+            [(ngModel)]="newPayment.invoiceId"
+            [disabled]="isSaving || invoicesLoading || invoices.length === 0"
+            required>
+            <option [ngValue]="0" disabled>
+              {{ invoicesLoading ? 'Loading invoices...' : 'Select invoice' }}
+            </option>
+            @for (invoice of invoices; track invoice.invoiceId) {
+            <option [ngValue]="invoice.invoiceId">
+              Invoice #{{ invoice.invoiceId }} · ₹{{ invoice.amount }} · {{ invoice.status }}
+            </option>
+            }
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- PAYMENT DATE -->
+
+      <div class="input-group">
+
+        <label for="paymentDate">
+          Payment Date
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon">
+
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 4h14v16H5V4Zm3-2v4m8-4v4M5 9h14"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+            </span>
+
+          <input
+            id="paymentDate"
+            type="date"
+            [max]="maxPaymentDate"
+            [disabled]="isSaving"
+            [(ngModel)]="newPayment.paymentDate"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- AMOUNT -->
+
+      <div class="input-group">
+
+        <label for="paymentAmount">
+          Payment Amount
+        </label>
+
+        <div class="input-shell">
+
+            <span class="input-icon currency">
+              ₹
+            </span>
+
+          <input
+            id="paymentAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            [max]="remainingBalance()"
+            [disabled]="isSaving"
+            placeholder="Enter payment amount"
+            [(ngModel)]="newPayment.amount"
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- PAYMENT MODE -->
+
+      <div class="input-group">
+
+        <label for="paymentMode">
+          Payment Mode
+        </label>
+
+        <div class="input-shell select-shell">
+
+            <span class="input-icon">
+
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 6.5h16v11H4v-11Zm3 3.5h3m-6-3.5 2-3h14l2 3"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+
+            </span>
+
+          <select
+            id="paymentMode"
+            [disabled]="isSaving"
+            [(ngModel)]="newPayment.mode"
+          >
+
+            <option value="UPI">
+              UPI
+            </option>
+
+            <option value="CASH">
+              CASH
+            </option>
+
+            <option value="CARD">
+              CARD
+            </option>
+
+            <option value="BANK TRANSFER">
+              BANK TRANSFER
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         FORM ACTIONS
+         =================================================== -->
+
+    <div class="form-actions">
+
+      <button
+        type="button"
+        class="save-btn"
+        [disabled]="isSaving || invoicesLoading || invoices.length === 0"
+        (click)="savePayment()"
+      >
+
+          <span class="action-icon">
+            ✓
+          </span>
+
+        {{ isSaving ? 'Saving...' : (editingId !== null ? 'Update Payment' : 'Save Payment') }}
+
+      </button>
+
+
+      <button
+        type="button"
+        class="cancel-btn"
+        (click)="cancelEdit()"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </section>
+
+  }
+
+
+  <!-- =====================================================
+       PAYMENT HISTORY
+       ===================================================== -->
+
+  <section class="table-card">
+
+    <div class="table-header">
+
+      <div class="table-title-area">
+
+        <div class="table-heading-icon">
+
+          <svg viewBox="0 0 24 24" fill="none">
+
+            <path
+              d="M4 6.5h16v11H4v-11Zm3 3.5h3m-6-3.5 2-3h14l2 3"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+          </svg>
+
+        </div>
+
+
+        <div>
+
+          <div class="table-kicker">
+            PAYMENT DIRECTORY
+          </div>
+
+          <h2>
+            Payment History
+          </h2>
+
+          <p>
+
+            {{ payments().length }}
+
+            {{
+            payments().length === 1
+            ? 'payment'
+            : 'payments'
+            }}
+
+            recorded in the system
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="record-count-box">
+
+        <span>Total</span>
+
+        <strong>
+          {{ payments().length }}
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    @if (isLoading) {
+    <div class="empty-state" role="status">Loading payments...</div>
+    } @else if (payments().length > 0) {
+
+    <!-- =================================================
+         TABLE TOOLBAR
+         ================================================= -->
+
+    <div class="table-toolbar">
+
+      <div class="toolbar-result">
+
+        Showing
+        <strong>{{ payments().length }}</strong>
+        payment records
+
+      </div>
+
+
+      <div class="toolbar-status">
+
+        <span class="toolbar-dot"></span>
+
+        Payments Live
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================
+         TABLE
+         ================================================= -->
+
+    <div class="table-wrapper">
+
+      <table>
+
+        <thead>
+
+        <tr>
+
+          <th>
+            Payment ID
+          </th>
+
+          <th>
+            Invoice
+          </th>
+
+          <th>
+            Payment Date
+          </th>
+
+          <th>
+            Amount
+          </th>
+
+          <th>
+            Payment Mode
+          </th>
+
+          <th>
+            Actions
+          </th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        @for (
+        payment of payments();
+        track payment.paymentId ?? payment.tempId
+        ) {
+
+        <tr>
+
+          <!-- PAYMENT ID -->
+
+          <td>
+
+            @if (payment.paymentId !== null) {
+
+            <span class="id-badge">
+                      #{{ payment.paymentId }}
+                    </span>
+
+            } @else {
+
+            <span class="saving-badge">
+                      Saving...
+                    </span>
+
+            }
+
+          </td>
+
+
+          <!-- INVOICE -->
+
+          <td>
+
+            <div class="invoice-cell">
+
+                    <span class="invoice-avatar">
+                      I
+                    </span>
+
+              <div class="invoice-copy">
+
+                <strong>
+                  Invoice #{{ payment.invoiceId }}
+                </strong>
+
+                <span>
+                        Billing record
+                      </span>
+
+              </div>
+
+            </div>
+
+          </td>
+
+
+          <!-- DATE -->
+
+          <td>
+
+            <div class="date-cell">
+
+                    <span class="date-icon">
+
+                      <svg viewBox="0 0 24 24" fill="none">
+
+                        <path
+                          d="M5 4h14v16H5V4Zm3-2v4m8-4v4M5 9h14"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+
+                      </svg>
+
+                    </span>
+
+              <span>
+                      {{ payment.paymentDate }}
+                    </span>
+
+            </div>
+
+          </td>
+
+
+          <!-- AMOUNT -->
+
+          <td>
+
+            <div class="amount-cell">
+
+                    <span class="amount-currency">
+                      ₹
+                    </span>
+
+              <strong class="amount">
+                {{ payment.amount }}
+              </strong>
+
+            </div>
+
+          </td>
+
+
+          <!-- MODE -->
+
+          <td>
+
+                  <span
+                    class="mode-badge"
+                    [class.upi]="payment.mode === 'UPI'"
+                    [class.cash]="payment.mode === 'CASH'"
+                    [class.card]="payment.mode === 'CARD'"
+                    [class.bank]="payment.mode === 'BANK TRANSFER'"
+                  >
+
+                    <span class="mode-dot"></span>
+
+                    {{ payment.mode }}
+
+                  </span>
+
+          </td>
+
+
+          <!-- ACTIONS -->
+
+          <td>
+
+            <div class="action-buttons">
+
+              @if (payment.paymentId !== null) {
+
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="editPayment(payment)"
+              >
+
+                <svg viewBox="0 0 24 24" fill="none">
+
+                  <path
+                    d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+
+                </svg>
+
+                <span>
+                          Edit
+                        </span>
+
+              </button>
+
+
+              <button
+                type="button"
+                class="delete-btn"
+                [disabled]="deletingId === payment.paymentId"
+                (click)="deletePayment(payment.paymentId)"
+              >
+
+                <svg viewBox="0 0 24 24" fill="none">
+
+                  <path
+                    d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                  />
+
+                </svg>
+
+                <span>
+                          {{ deletingId === payment.paymentId ? 'Deleting...' : 'Delete' }}
+                        </span>
+
+              </button>
+
+              } @else {
+
+              <span class="saving-text">
+                        Saving...
+                      </span>
+
+              }
+
+            </div>
+
+          </td>
+
+        </tr>
+
+        }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- =================================================
+         TABLE FOOTER
+         ================================================= -->
+
+    <div class="table-footer">
+
+        <span>
+          {{ payments().length }} total records
+        </span>
+
+      <span class="footer-sync">
+
+          <span class="toolbar-dot"></span>
+
+          Data synced
+
+        </span>
+
+    </div>
+
+    } @else {
+
+    <!-- =================================================
+         EMPTY STATE
+         ================================================= -->
+
+    <div class="empty-state">
+
+      <div class="empty-illustration">
+
+        <svg viewBox="0 0 48 48" fill="none">
+
+          <rect
+            x="6"
+            y="9"
+            width="36"
+            height="28"
+            rx="6"
+            stroke="currentColor"
+            stroke-width="1.6"
+          />
+
+          <path
+            d="M6 17h36"
+            stroke="currentColor"
+            stroke-width="1.6"
+          />
+
+          <path
+            d="M18 25h12M18 30h7"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <div class="empty-copy">
+
+        <div class="empty-kicker">
+          PAYMENT DIRECTORY
+        </div>
+
+        <h3>
+          No Payments Found
+        </h3>
+
+        <p>
+          There are currently no payments recorded.
+          Add your first payment to get started.
+        </p>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="empty-btn"
+        (click)="showForm = true"
+      >
+
+          <span>
+            +
+          </span>
+
+        Record First Payment
+
+      </button>
+
+    </div>
+
+    }
+
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER
+       ===================================================== -->
+
+  <div class="payments-footer">
+
+    <span class="footer-live">
+
+      <span class="footer-live-dot"></span>
+
+      Payment module connected
+
+    </span>
+
+    <span>
+      OrderCraft ERP
+    </span>
+
+  </div>
+
+</div>

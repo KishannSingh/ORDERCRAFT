@@ -2,7 +2,9 @@ package com.ordercraft.ordercraft.controller;
 
 import com.ordercraft.ordercraft.entity.Payment;
 import com.ordercraft.ordercraft.service.PaymentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,7 +21,9 @@ public class PaymentController {
 
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Payment addPayment(@RequestBody Payment payment) {
+        if (payment != null) payment.setPaymentId(null);
         return paymentService.savePayment(payment);
     }
 
@@ -41,6 +45,10 @@ public class PaymentController {
             @PathVariable Long id,
             @RequestBody Payment payment) {
 
+        if (payment == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payment data is required");
+        }
+
         Payment existingPayment =
                 paymentService.getPaymentById(id);
 
@@ -54,6 +62,7 @@ public class PaymentController {
 
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePayment(@PathVariable Long id) {
         paymentService.deletePayment(id);
     }

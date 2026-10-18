@@ -5,6 +5,8 @@ import com.ordercraft.ordercraft.service.AuthService;
 import com.ordercraft.ordercraft.service.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,40 +30,25 @@ public class AuthController {
     // =========================================================
 
     @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> register(
             @RequestBody AuthRequest request
     ) {
-
-        try {
-
-            AppUser user = authService.register(
-                    request.email(),
-                    request.password(),
-                    "USER"
-            );
-
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(
-                            new AuthResponse(
-                                    "Registration successful",
-                                    user.getId(),
-                                    user.getEmail(),
-                                    user.getRole(),
-                                    null
-                            )
-                    );
-
-        } catch (RuntimeException e) {
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(
-                            new ErrorResponse(
-                                    e.getMessage()
-                            )
-                    );
-        }
+        requireRequest(request);
+        AppUser user = authService.register(
+                request.email(),
+                request.password(),
+                "USER"
+        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new AuthResponse(
+                        "Registration successful",
+                        user.getId(),
+                        user.getEmail(),
+                        user.getRole(),
+                        null
+                ));
     }
 
     // =========================================================
@@ -72,36 +59,30 @@ public class AuthController {
     public ResponseEntity<?> login(
             @RequestBody AuthRequest request
     ) {
+        requireRequest(request);
+        AppUser user = authService.login(
+                request.email(),
+                request.password()
+        );
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.ok(new AuthResponse(
+                "Login successful",
+                user.getId(),
+                user.getEmail(),
+                user.getRole(),
+                token
+        ));
+    }
 
-        try {
+    @GetMapping("/me")
+    public UserResponse currentUser(Authentication authentication) {
+        AppUser user = authService.getAuthenticatedUser(authentication.getName());
+        return new UserResponse(user.getId(), user.getEmail(), user.getRole());
+    }
 
-            AppUser user = authService.login(
-                    request.email(),
-                    request.password()
-            );
-
-            String token =
-                    jwtService.generateToken(user);
-
-            return ResponseEntity.ok(
-                    new AuthResponse(
-                            "Login successful",
-                            user.getId(),
-                            user.getEmail(),
-                            user.getRole(),
-                            token
-                    )
-            );
-
-        } catch (RuntimeException e) {
-
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(
-                            new ErrorResponse(
-                                    e.getMessage()
-                            )
-                    );
+    private void requireRequest(AuthRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authentication data is required");
         }
     }
 
@@ -128,12 +109,7 @@ public class AuthController {
     ) {
     }
 
-    // =========================================================
-    // ERROR RESPONSE
-    // =========================================================
-
-    public record ErrorResponse(
-            String message
-    ) {
+    public record UserResponse(Long userId, String email, String role) {
     }
+
 }

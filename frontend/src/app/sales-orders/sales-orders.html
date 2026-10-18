@@ -1,0 +1,660 @@
+<div class="orders-page">
+
+  <!-- PAGE HEADER -->
+  <header class="page-heading">
+    <div class="heading-copy">
+      <div class="heading-kicker">
+        <span class="heading-kicker-dot"></span>
+        ORDERCRAFT / ORDER MANAGEMENT
+      </div>
+
+      <h1>Sales Orders</h1>
+      <p>Create, manage and track customer sales orders.</p>
+    </div>
+
+    <button
+      type="button"
+      class="primary-btn"
+      (click)="openCreateForm()">
+      <span class="btn-icon">+</span>
+      Create Sales Order
+    </button>
+  </header>
+
+  @if (errorMessage) {
+  <div class="api-message error-message" role="alert">{{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+  <div class="api-message success-message" role="status">{{ successMessage }}</div>
+  }
+  @if (customersError || productsError) {
+  <div class="api-message error-message" role="alert">
+    {{ customersError || productsError }}
+    @if (customersError) {
+    <button type="button" class="empty-btn" (click)="loadCustomers()" [disabled]="customersLoading">Retry customers</button>
+    }
+    @if (productsError) {
+    <button type="button" class="empty-btn" (click)="loadProducts()" [disabled]="productsLoading">Retry products</button>
+    }
+  </div>
+  }
+
+  <!-- STATISTICS -->
+  <section class="order-stats">
+
+    <article class="order-stat-card">
+      <div class="order-stat-icon total">
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+          <path d="M8 8h8M8 12h8M8 16h5"></path>
+        </svg>
+      </div>
+      <div>
+        <span>Total Orders</span>
+        <strong>{{ loading ? '…' : (ordersError ? '—' : orders.length) }}</strong>
+      </div>
+    </article>
+
+    <article class="order-stat-card">
+      <div class="order-stat-icon workflow">
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 2"></path>
+        </svg>
+      </div>
+      <div>
+        <span>Pending Orders</span>
+        <strong class="status-text">
+          {{ loading ? '…' : (ordersError ? '—' : countByStatus('PENDING')) }}
+        </strong>
+      </div>
+    </article>
+
+    <article class="order-stat-card">
+      <div class="order-stat-icon synced">
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 12 4 4L19 6"></path>
+        </svg>
+      </div>
+      <div>
+        <span>Completed Orders</span>
+        <strong class="synced-text">
+          {{ loading ? '…' : (ordersError ? '—' : countByStatus('COMPLETED')) }}
+        </strong>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- CREATE / EDIT FORM -->
+  @if (showForm) {
+  <section class="form-card">
+
+    <div class="form-header">
+      <div class="form-title-area">
+        <div class="form-icon">＋</div>
+
+        <div>
+          <div class="form-kicker">ORDER DETAILS</div>
+          <h2>
+            {{ editingOrderId !== null
+            ? 'Edit Sales Order'
+            : 'Create Sales Order' }}
+          </h2>
+          <p>Enter the customer and order information below.</p>
+        </div>
+      </div>
+
+      <span class="form-badge">
+          {{ editingOrderId !== null ? 'EDIT MODE' : 'NEW ORDER' }}
+        </span>
+    </div>
+
+    <div class="form-divider"></div>
+
+    <form #orderForm="ngForm" (ngSubmit)="saveOrder()">
+
+      <div class="form-grid">
+
+        <!-- CUSTOMER -->
+        <div class="input-group">
+          <label for="customerId">Customer *</label>
+
+          <div class="input-shell">
+            <span class="input-icon">C</span>
+
+            <select
+              id="customerId"
+              name="customerId"
+              [(ngModel)]="newOrder.customerId"
+              required>
+
+              <option [ngValue]="0" disabled>
+                Select customer
+              </option>
+
+              @for (
+              customer of customers;
+              track (customer.customerId ?? customer.id)
+              ) {
+              <option
+                [ngValue]="customer.customerId ?? customer.id">
+                {{
+                customer.name ??
+                customer.customerName ??
+                ('Customer #' +
+                (customer.customerId ?? customer.id))
+                }}
+              </option>
+              }
+
+            </select>
+          </div>
+        </div>
+
+        <!-- ORDER DATE -->
+        <div class="input-group">
+          <label for="orderDate">Order Date *</label>
+
+          <div class="input-shell">
+            <span class="input-icon">D</span>
+
+            <input
+              id="orderDate"
+              type="date"
+              name="orderDate"
+              [(ngModel)]="newOrder.orderDate"
+              required>
+          </div>
+        </div>
+
+        <!-- STATUS -->
+        <div class="input-group">
+          <label for="status">Order Status *</label>
+
+          <div class="input-shell">
+            <span class="input-icon">S</span>
+
+            <select
+              id="status"
+              name="status"
+              [(ngModel)]="newOrder.status"
+              required>
+
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="form-note">The order total is calculated from its sales order items.</p>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions">
+
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="cancelEdit()">
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="save-btn"
+          [disabled]="
+              saving ||
+              !orderForm.valid ||
+              +newOrder.customerId <= 0
+            ">
+
+          <span class="action-icon">✓</span>
+
+          {{
+          saving
+          ? 'Saving...'
+          : (editingOrderId !== null
+          ? 'Update Order'
+          : 'Save Order')
+          }}
+
+        </button>
+
+      </div>
+
+    </form>
+  </section>
+  }
+
+  @if (selectedOrderId !== null) {
+  <section class="items-card">
+    <header class="items-heading">
+      <div>
+        <span class="table-kicker">ORDER LINES</span>
+        <h2>Items for Sales Order #{{ selectedOrderId }}</h2>
+        <p>Line totals update the sales order total after each successful change.</p>
+      </div>
+      <div class="items-heading-actions">
+        <button type="button" class="primary-btn" (click)="openNewItemForm()" [disabled]="itemSaving || orderItemsLoading || products.length === 0">
+          Add Item
+        </button>
+        <button type="button" class="secondary-btn" (click)="closeOrderItems()" [disabled]="itemSaving">Close</button>
+      </div>
+    </header>
+
+    @if (itemErrorMessage) {
+    <div class="api-message error-message" role="alert">{{ itemErrorMessage }}</div>
+    }
+
+    @if (showItemForm) {
+    <form class="item-form" #lineForm="ngForm" (ngSubmit)="saveOrderItem()">
+      <div class="input-group">
+        <label for="lineProduct">Product *</label>
+        <select id="lineProduct" name="productId" [(ngModel)]="itemForm.productId" (ngModelChange)="onProductSelected($event)" required [disabled]="itemSaving">
+          <option [ngValue]="0" disabled>Select product</option>
+          @for (product of products; track product.productId) {
+          <option [ngValue]="product.productId">{{ product.productCode }} · {{ product.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="lineQuantity">Quantity *</label>
+        <input id="lineQuantity" name="quantity" type="number" min="1" step="1" [(ngModel)]="itemForm.quantity" required [disabled]="itemSaving" />
+      </div>
+      <div class="input-group">
+        <label for="lineUnitPrice">Unit Price (₹) *</label>
+        <input id="lineUnitPrice" name="unitPrice" type="number" min="0.01" step="0.01" [(ngModel)]="itemForm.unitPrice" required [disabled]="itemSaving" />
+      </div>
+      <div class="item-form-actions">
+        <button type="submit" class="save-btn" [disabled]="itemSaving || lineForm.invalid || itemForm.productId <= 0">
+          {{ itemSaving ? 'Saving...' : (editingItemId !== null ? 'Update Item' : 'Save Item') }}
+        </button>
+        <button type="button" class="secondary-btn" (click)="showItemForm = false; editingItemId = null; resetItemForm()" [disabled]="itemSaving">Cancel</button>
+      </div>
+    </form>
+    }
+
+    @if (orderItemsLoading) {
+    <div class="items-empty" role="status">Loading order items...</div>
+    } @else if (orderItems.length > 0) {
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Item</th><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Line Total</th><th>Actions</th></tr></thead>
+        <tbody>
+          @for (item of orderItems; track item.itemId) {
+          <tr>
+            <td>#{{ item.itemId }}</td>
+            <td>{{ getProductName(item.productId) }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>₹{{ item.unitPrice | number:'1.2-2' }}</td>
+            <td>₹{{ item.quantity * item.unitPrice | number:'1.2-2' }}</td>
+            <td class="item-actions">
+              <button type="button" class="edit-btn" title="Edit order item" aria-label="Edit order item #{{ item.itemId }}" (click)="editOrderItem(item)" [disabled]="itemSaving || itemDeletingId !== null">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m4 16.5-.7 3.7 3.7-.7L18 8.5 15.5 6 4 16.5ZM14 7.5l2.5 2.5M17 5l2 2a1.4 1.4 0 0 1 0 2l-.5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Edit</span>
+              </button>
+              <button type="button" class="delete-btn" title="Delete order item" aria-label="Delete order item #{{ item.itemId }}" (click)="deleteOrderItem(item.itemId)" [disabled]="itemSaving || itemDeletingId !== null">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 7h14M10 11v6m4-6v6M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>{{ itemDeletingId === item.itemId ? 'Deleting...' : 'Delete' }}</span>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    } @else {
+    <div class="items-empty">No items on this order yet. Add a product line to calculate the order total.</div>
+    }
+  </section>
+  }
+
+  <!-- ORDERS TABLE -->
+  <section class="table-card">
+
+    <!-- TABLE HEADER -->
+    <div class="table-header">
+
+      <div class="table-title-area">
+        <div class="table-heading-icon">
+          <svg viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+            <path d="M8 8h8M8 12h8M8 16h5"></path>
+          </svg>
+        </div>
+
+        <div>
+          <div class="table-kicker">ORDER REGISTER</div>
+          <h2>Sales Order List</h2>
+          <p>View and manage all customer orders.</p>
+        </div>
+      </div>
+
+      <div class="record-count-box">
+        <span>Records</span>
+        <strong>{{ loading ? '…' : (ordersError ? '—' : orders.length) }}</strong>
+      </div>
+
+    </div>
+
+    <!-- TABLE TOOLBAR -->
+    <div class="table-toolbar">
+
+      <div class="toolbar-result">
+        @if (loading) {
+        Loading order records…
+        } @else if (ordersError) {
+        Order count unavailable
+        } @else {
+        Showing <strong>{{ orders.length }}</strong> {{ orders.length === 1 ? 'order' : 'orders' }} in the system
+        }
+      </div>
+
+      <div class="toolbar-status">
+        <span class="toolbar-dot"></span>
+
+        @if (loading) {
+        Syncing data...
+        } @else if (ordersError) {
+        Connection error
+        } @else {
+        Data loaded
+        }
+      </div>
+
+    </div>
+
+    <!-- LOADING STATE -->
+    @if (loading) {
+
+    <div class="empty-state">
+      <div class="empty-illustration">↻</div>
+
+      <div class="empty-copy">
+        <h3>Loading sales orders...</h3>
+        <p>Please wait while order records are retrieved.</p>
+      </div>
+    </div>
+
+    } @else if (ordersError) {
+
+    <!-- ERROR STATE -->
+    <div class="empty-state">
+
+      <div class="empty-copy">
+        <h3>Unable to load sales orders</h3>
+        <p>{{ ordersError }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="empty-btn"
+        (click)="loadOrders()">
+        Retry
+      </button>
+
+    </div>
+
+    } @else if (orders.length > 0) {
+
+    <!-- DATA TABLE -->
+    <div class="table-wrapper">
+
+      <table>
+        <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Order Date</th>
+          <th>Status</th>
+          <th>Total Amount</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        @for (order of orders; track order.orderId) {
+        <tr>
+
+          <!-- ORDER ID -->
+          <td>
+                  <span class="id-badge">
+                    SO-{{ order.orderId }}
+                  </span>
+          </td>
+
+          <!-- CUSTOMER -->
+          <td>
+            <div class="customer-cell">
+
+              <div class="customer-avatar">
+                {{ getCustomerInitials(order.customerId) }}
+              </div>
+
+              <div class="customer-copy">
+                <strong>
+                  {{ getCustomerName(order.customerId) }}
+                </strong>
+
+                  <span>{{ getCustomerDetail(order.customerId) }}</span>
+              </div>
+
+            </div>
+          </td>
+
+          <!-- ORDER DATE -->
+          <td>
+            <div class="date-cell">
+
+                    <span class="date-icon">
+                      <svg viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="1.8"
+                           stroke-linecap="round"
+                           stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                        <path d="M16 3v4M8 3v4M3 10h18"></path>
+                      </svg>
+                    </span>
+
+              <span>{{ order.orderDate }}</span>
+
+            </div>
+          </td>
+
+          <!-- ORDER STATUS -->
+          <td>
+                  <span
+                    class="status-badge"
+                    [class.pending]="
+                      order.status?.toUpperCase() === 'PENDING'
+                    "
+                    [class.confirmed]="
+                      order.status?.toUpperCase() === 'CONFIRMED'
+                    "
+                    [class.completed]="
+                      order.status?.toUpperCase() === 'COMPLETED'
+                    "
+                    [class.cancelled]="
+                      order.status?.toUpperCase() === 'CANCELLED'
+                    ">
+
+                    <span class="status-dot"></span>
+                    {{ order.status }}
+
+                  </span>
+          </td>
+
+          <!-- TOTAL AMOUNT -->
+          <td>
+            <div class="amount-cell">
+              <span class="amount-currency">₹</span>
+
+              <strong>
+                {{ order.totalAmount | number:'1.2-2' }}
+              </strong>
+            </div>
+          </td>
+
+          <!-- ACTIONS: EDIT / DELETE -->
+          <td>
+            <div class="action-buttons">
+
+              <!-- EDIT BUTTON -->
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="manageOrderItems(order)"
+                [disabled]="itemSaving"
+                aria-label="Manage sales order items">
+                Items
+              </button>
+
+              <button
+                type="button"
+                class="edit-btn"
+                (click)="editOrder(order)"
+                title="Edit order"
+                aria-label="Edit sales order">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true">
+
+                  <!-- Pencil icon without the extra horizontal line -->
+                  <path
+                    d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z">
+                  </path>
+
+                </svg>
+
+                <span>Edit</span>
+              </button>
+
+              <!-- DELETE BUTTON -->
+              <button
+                type="button"
+                class="delete-btn"
+                (click)="deleteOrder(order.orderId)"
+                [disabled]="deletingOrderId === order.orderId"
+                title="Delete order"
+                aria-label="Delete sales order">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true">
+
+                  <path d="M3 6h18"></path>
+                  <path d="M8 6V4h8v2"></path>
+                  <path d="m19 6-1 14H6L5 6"></path>
+                  <path d="M10 11v5M14 11v5"></path>
+
+                </svg>
+
+                <span>{{ deletingOrderId === order.orderId ? 'Deleting...' : 'Delete' }}</span>
+              </button>
+
+            </div>
+          </td>
+
+        </tr>
+        }
+
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- TABLE FOOTER -->
+    <div class="table-footer">
+
+        <span>
+          {{ orders.length }}
+          {{ orders.length === 1 ? 'record' : 'records' }} found
+        </span>
+
+      <span class="footer-sync">
+          <span class="toolbar-dot"></span>
+          Connected to backend
+        </span>
+
+    </div>
+
+    } @else {
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state">
+
+      <div class="empty-illustration">
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+          <path d="M8 8h8M8 12h5"></path>
+        </svg>
+      </div>
+
+      <div class="empty-kicker">NO RECORDS FOUND</div>
+
+      <div class="empty-copy">
+        <h3>No Sales Orders Yet</h3>
+        <p>
+          Your sales orders will appear here once they have been created.
+          Create your first sales order to get started.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="empty-btn"
+        (click)="openCreateForm()">
+        <span>+</span>
+        Create First Order
+      </button>
+
+    </div>
+
+    }
+
+  </section>
+
+  <!-- PAGE FOOTER -->
+  <footer class="orders-footer">
+
+    <span>ORDERCRAFT · Sales Order Management</span>
+
+    <span class="footer-live">
+      <span class="footer-live-dot"></span>
+      Live backend connection
+    </span>
+
+  </footer>
+
+</div>
